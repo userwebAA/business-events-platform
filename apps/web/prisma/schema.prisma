@@ -1,0 +1,268 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Event {
+  id                String   @id @default(cuid())
+  title             String
+  description       String
+  date              DateTime
+  endDate           DateTime?
+  location          String
+  address           String
+  organizerId       String
+  type              String   // 'free' or 'paid'
+  price             Float?
+  currency          String   @default("EUR")
+  maxAttendees      Int?
+  currentAttendees  Int      @default(0)
+  imageUrl          String?
+  status            String   @default("published")
+  isPrivate         Boolean  @default(false)
+  accessToken       String?  @unique
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  registrationFields RegistrationField[]
+  registrations      Registration[]
+  
+  @@index([date])
+  @@index([type])
+  @@index([accessToken])
+}
+
+model RegistrationField {
+  id          String   @id @default(cuid())
+  eventId     String
+  name        String
+  label       String
+  type        String   // 'text', 'email', 'phone', 'select', 'textarea'
+  required    Boolean  @default(false)
+  options     String[] // Pour les champs select
+  placeholder String?
+  
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  @@index([eventId])
+}
+
+model Registration {
+  id        String   @id @default(cuid())
+  eventId   String
+  formData  Json
+  createdAt DateTime @default(now())
+  
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ticket    Ticket?
+  
+  @@index([eventId])
+}
+
+enum TicketStatus {
+  VALID
+  USED
+  CANCELLED
+}
+
+model Ticket {
+  id             String       @id @default(cuid())
+  registrationId String       @unique
+  qrCode         String       @unique
+  status         TicketStatus @default(VALID)
+  usedAt         DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  
+  @@index([qrCode])
+  @@index([status])
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  name        String
+  role        Role     @default(USER)
+  
+  // Profil professionnel
+  firstName   String?
+  lastName    String?
+  phone       String?
+  position    String?
+  company     String?
+  bio         String?
+  photo       String?
+  location    String?
+  skills      String[]
+  linkedin    String?
+  
+  // État du profil
+  profileCompleted Boolean @default(false)
+  
+  // Vérification d'identité
+  identityStatus   String   @default("none") // none, pending, verified, rejected
+  identityDocument String?  // base64 de la carte d'identité
+  identitySubmittedAt DateTime?
+  identityReviewedAt  DateTime?
+  identityRejectReason String?
+  
+  // Stripe Connect
+  stripeAccountId          String?  @unique
+  stripeOnboardingComplete Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
+  eventBadges       EventBadge[]
+  payments          Payment[]
+  payouts           Payout[]
+  
+  @@index([email])
+}
+
+model EventBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  eventTitle String
+  eventImage String?
+  eventDate  DateTime
+  role       String   // 'organizer' or 'attendee'
+  visible    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+}
+
+enum NotificationType {
+  EVENT_REMINDER
+  EVENT_UPDATE
+  EVENT_CANCELLED
+  REGISTRATION_CONFIRMED
+  NETWORKING_MATCH
+  MESSAGE_RECEIVED
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([createdAt])
+  @@index([read])
+}
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String
+  endpoint     String   @unique
+  p256dh       String
+  auth         String
+  createdAt    DateTime @default(now())
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id                  String        @id @default(cuid())
+  stripePaymentId     String        @unique // Stripe PaymentIntent ID
+  stripeSessionId     String?       @unique // Stripe Checkout Session ID
+  amount              Float         // Montant total payé (en euros)
+  platformFee         Float         // Commission plateforme (en euros)
+  creatorAmount       Float         // Montant pour le créateur (en euros)
+  currency            String        @default("EUR")
+  status              PaymentStatus @default(PENDING)
+  
+  // Relations
+  userId              String        // L'utilisateur qui a payé
+  eventId             String        // L'événement concerné
+  registrationId      String?       // L'inscription liée
+  organizerId         String        // Le créateur de la soirée
+  
+  // Refund info
+  stripeRefundId      String?       @unique // Stripe Refund ID
+  refundedAt          DateTime?     // Date du remboursement
+  
+  // Payout info
+  payoutEligibleAt    DateTime      // Date à laquelle le payout est possible (date paiement + 7 jours)
+  payoutId            String?       // Lié au Payout quand effectué
+  
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payout              Payout?       @relation(fields: [payoutId], references: [id])
+  
+  @@index([userId])
+  @@index([eventId])
+  @@index([organizerId])
+  @@index([status])
+  @@index([payoutEligibleAt])
+}
+
+enum PayoutStatus {
+  PENDING       // En attente (délai 7 jours pas écoulé)
+  ELIGIBLE      // Éligible au payout (7 jours écoulés)
+  PROCESSING    // Transfer Stripe en cours
+  COMPLETED     // Viré au créateur
+  FAILED        // Échec du virement
+}
+
+model Payout {
+  id                String       @id @default(cuid())
+  stripeTransferId  String?      @unique // Stripe Transfer ID
+  amount            Float        // Montant total viré au créateur
+  currency          String       @default("EUR")
+  status            PayoutStatus @default(PENDING)
+  
+  organizerId       String       // Le créateur qui reçoit l'argent
+  stripeAccountId   String       // Le compte Stripe Connect du créateur
+  
+  failureReason     String?      // Raison de l'échec si applicable
+  
+  organizer         User         @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  payments          Payment[]    // Les paiements inclus dans ce payout
+  
+  processedAt       DateTime?    // Date du virement effectif
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  
+  @@index([organizerId])
+  @@index([status])
+}

@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Business Events",
+    "slug": "business-events",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0ea5e9"
+    },
+    "updates": {
+      "enabled": false
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.businessevents.app"
+    },
+    "android": {
+      "package": "com.businessevents.app"
+    }
+  }
+}

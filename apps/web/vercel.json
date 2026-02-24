@@ -1,0 +1,17 @@
+{
+  "buildCommand": "cd ../.. && npm run build:web",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "regions": ["cdg1"],
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "JWT_SECRET": "@jwt_secret",
+    "SMTP_HOST": "@smtp_host",
+    "SMTP_PORT": "@smtp_port",
+    "SMTP_USER": "@smtp_user",
+    "SMTP_PASS": "@smtp_pass",
+    "RATE_LIMIT_MAX_REQUESTS": "5",
+    "RATE_LIMIT_WINDOW_MS": "900000",
+    "BCRYPT_ROUNDS": "10"
+  }
+}

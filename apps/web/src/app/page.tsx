@@ -1,0 +1,375 @@
+'use client';
+
+import Link from 'next/link'
+import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+
+export default function Home() {
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+    const [showInstallButton, setShowInstallButton] = useState(false);
+
+    useEffect(() => {
+        const handler = (e: Event) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+            setShowInstallButton(true);
+        };
+
+        window.addEventListener('beforeinstallprompt', handler);
+
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        if (isStandalone) {
+            setShowInstallButton(false);
+        } else {
+            setShowInstallButton(true);
+        }
+
+        return () => window.removeEventListener('beforeinstallprompt', handler);
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') setShowInstallButton(false);
+        setDeferredPrompt(null);
+    };
+
+    return (
+        <div className="min-h-screen">
+            {/* Hero Section - Full Screen */}
+            <div className="relative min-h-screen bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 overflow-hidden">
+                {/* Animated Background Elements */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute top-20 left-10 w-72 h-72 bg-sky-400 opacity-10 rounded-full blur-2xl"></div>
+                    <div className="absolute bottom-20 right-10 w-80 h-80 bg-indigo-400 opacity-10 rounded-full blur-2xl"></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-300 opacity-5 rounded-full blur-2xl"></div>
+                </div>
+
+                {/* Navbar */}
+                <nav className="relative z-20 px-4 sm:px-6 lg:px-16 py-4 sm:py-6">
+                    <div className="max-w-7xl mx-auto flex justify-between items-center">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div className="bg-white bg-opacity-20 p-2 sm:p-2.5 rounded-xl backdrop-blur-sm shrink-0">
+                                <Calendar className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
+                            </div>
+                            <span className="text-lg sm:text-2xl font-bold text-white whitespace-nowrap">TAFF Events</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+                            <Link
+                                href="/login"
+                                className="text-white text-xs sm:text-sm font-medium px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg hover:bg-white hover:bg-opacity-10 transition-all"
+                            >
+                                Connexion
+                            </Link>
+                            <Link
+                                href="/register"
+                                className="bg-white text-blue-700 text-xs sm:text-sm font-bold px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg hover:bg-opacity-90 transition-all shadow-lg"
+                            >
+                                Inscription
+                            </Link>
+                        </div>
+                    </div>
+                </nav>
+
+                {/* Hero Content */}
+                <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-16 pt-16 lg:pt-24 pb-32">
+                    <div className="grid lg:grid-cols-2 gap-16 items-center">
+                        {/* Left - Text */}
+                        <div>
+                            <div className="inline-flex items-center gap-2 bg-white bg-opacity-10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-blue-100 mb-8 border border-white border-opacity-20">
+                                <Zap className="h-4 w-4 text-yellow-300" />
+                                Plateforme #1 d'événements professionnels
+                            </div>
+
+                            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 sm:mb-8 leading-tight">
+                                Organisez vos
+                                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-sky-200 to-cyan-200">
+                                    événements business
+                                </span>
+                            </h1>
+
+                            <p className="text-base sm:text-xl text-blue-100 mb-8 sm:mb-10 leading-relaxed max-w-lg">
+                                Créez des soirées professionnelles, gérez les inscriptions avec QR codes et développez votre réseau en toute simplicité.
+                            </p>
+
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <Link
+                                    href="/register"
+                                    className="bg-white text-blue-700 px-8 py-4 rounded-xl text-lg font-bold hover:bg-opacity-90 transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center justify-center gap-2"
+                                >
+                                    Commencer gratuitement
+                                    <ArrowRight className="h-5 w-5" />
+                                </Link>
+                                <Link
+                                    href="/login"
+                                    className="border-2 border-white border-opacity-30 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-white hover:bg-opacity-10 transition-all flex items-center justify-center gap-2"
+                                >
+                                    Se connecter
+                                </Link>
+                            </div>
+
+                            {/* Stats */}
+                            <div className="flex gap-6 sm:gap-10 mt-10 sm:mt-14">
+                                <div>
+                                    <p className="text-2xl sm:text-3xl font-bold text-white">500+</p>
+                                    <p className="text-blue-200 text-xs sm:text-sm">Événements créés</p>
+                                </div>
+                                <div>
+                                    <p className="text-2xl sm:text-3xl font-bold text-white">10K+</p>
+                                    <p className="text-blue-200 text-xs sm:text-sm">Participants</p>
+                                </div>
+                                <div>
+                                    <p className="text-2xl sm:text-3xl font-bold text-white">98%</p>
+                                    <p className="text-blue-200 text-xs sm:text-sm">Satisfaction</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right - Visual Card */}
+                        <div className="hidden lg:block">
+                            <div className="relative">
+                                {/* Main Card */}
+                                <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-3xl p-8 border border-white border-opacity-20 shadow-2xl">
+                                    <div className="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-6 shadow-inner">
+                                        <div className="flex items-center gap-4 mb-6">
+                                            <div className="bg-gradient-to-br from-sky-500 to-blue-600 w-12 h-12 rounded-xl flex items-center justify-center">
+                                                <Calendar className="h-6 w-6 text-white" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-gray-900">Conférence Tech</h3>
+                                                <p className="text-sm text-gray-500">Paris - 25 participants</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3 mb-6">
+                                            <div className="flex items-center gap-3 text-sm text-gray-600">
+                                                <div className="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center">
+                                                    <span>📅</span>
+                                                </div>
+                                                <span>Vendredi 14 Février, 19h00</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 text-sm text-gray-600">
+                                                <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                                    <span>📍</span>
+                                                </div>
+                                                <span>Le Rooftop, Paris 8ème</span>
+                                            </div>
+                                            <div className="flex items-center gap-3 text-sm text-gray-600">
+                                                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                                                    <span>🎫</span>
+                                                </div>
+                                                <span>Billet avec QR Code inclus</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gradient-to-r from-sky-500 to-blue-600 text-white text-center py-3 rounded-xl font-bold text-sm">
+                                            S'inscrire maintenant
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Floating Badge */}
+                                <div className="absolute -top-4 -right-4 bg-gradient-to-r from-emerald-400 to-green-500 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2">
+                                    <QrCode className="h-4 w-4" />
+                                    QR Code auto
+                                </div>
+
+                                {/* Floating Notification */}
+                                <div className="absolute -bottom-6 -left-6 bg-white rounded-xl px-5 py-3 shadow-xl flex items-center gap-3 border border-gray-100">
+                                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                        <span className="text-lg">✅</span>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-900">Email envoyé !</p>
+                                        <p className="text-xs text-gray-500">Billet PDF avec QR code</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Wave Separator */}
+                <div className="absolute bottom-0 left-0 right-0">
+                    <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white" />
+                    </svg>
+                </div>
+            </div>
+
+            {/* PWA Install Section */}
+            {showInstallButton && (
+                <div className="max-w-5xl mx-auto px-6 -mt-8 relative z-20 mb-16">
+                    <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -mr-32 -mt-32"></div>
+                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-10 rounded-full -ml-24 -mb-24"></div>
+
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                            <div className="bg-white bg-opacity-20 p-5 rounded-2xl backdrop-blur-sm">
+                                <Smartphone className="h-14 w-14 text-white" />
+                            </div>
+                            <div className="flex-1 text-center md:text-left">
+                                <h2 className="text-2xl font-bold mb-2">
+                                    Installez l'application TAFF Events
+                                </h2>
+                                <p className="text-purple-100">
+                                    Accès instantané, notifications en temps réel et mode hors ligne
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleInstallClick}
+                                className="bg-white text-purple-600 px-8 py-4 rounded-xl text-lg font-bold hover:bg-opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2 whitespace-nowrap"
+                            >
+                                <Download className="h-5 w-5" />
+                                Installer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Features Section */}
+            <section className="py-24 bg-white">
+                <div className="max-w-7xl mx-auto px-6 lg:px-16">
+                    <div className="text-center mb-16">
+                        <span className="inline-block bg-sky-100 text-sky-700 text-sm font-bold px-4 py-2 rounded-full mb-4">
+                            Fonctionnalités
+                        </span>
+                        <h2 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-4">
+                            Tout ce dont vous avez besoin
+                        </h2>
+                        <p className="text-base sm:text-xl text-gray-500 max-w-2xl mx-auto">
+                            Une plateforme complète pour gérer vos événements professionnels de A à Z
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="group bg-gradient-to-br from-gray-50 to-sky-50 p-8 rounded-2xl border border-gray-100 hover:shadow-2xl transition-shadow duration-200 hover:-translate-y-1">
+                            <div className="bg-gradient-to-br from-sky-400 to-blue-500 w-14 h-14 rounded-xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <Calendar className="h-7 w-7 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">Création intuitive</h3>
+                            <p className="text-gray-600 leading-relaxed mb-4">Créez vos événements en quelques clics avec notre interface moderne et intuitive.</p>
+                            <span className="text-sky-600 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                                En savoir plus <ChevronRight className="h-4 w-4" />
+                            </span>
+                        </div>
+
+                        <div className="group bg-gradient-to-br from-gray-50 to-purple-50 p-8 rounded-2xl border border-gray-100 hover:shadow-2xl transition-shadow duration-200 hover:-translate-y-1">
+                            <div className="bg-gradient-to-br from-purple-400 to-pink-500 w-14 h-14 rounded-xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <QrCode className="h-7 w-7 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">Billets & QR Codes</h3>
+                            <p className="text-gray-600 leading-relaxed mb-4">Billets PDF avec QR code envoyés automatiquement par email à chaque inscription.</p>
+                            <span className="text-purple-600 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                                En savoir plus <ChevronRight className="h-4 w-4" />
+                            </span>
+                        </div>
+
+                        <div className="group bg-gradient-to-br from-gray-50 to-emerald-50 p-8 rounded-2xl border border-gray-100 hover:shadow-2xl transition-shadow duration-200 hover:-translate-y-1">
+                            <div className="bg-gradient-to-br from-emerald-400 to-green-500 w-14 h-14 rounded-xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <Users className="h-7 w-7 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">Gestion participants</h3>
+                            <p className="text-gray-600 leading-relaxed mb-4">Collectez les informations et gérez vos participants avec des formulaires personnalisés.</p>
+                            <span className="text-emerald-600 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                                En savoir plus <ChevronRight className="h-4 w-4" />
+                            </span>
+                        </div>
+
+                        <div className="group bg-gradient-to-br from-gray-50 to-orange-50 p-8 rounded-2xl border border-gray-100 hover:shadow-2xl transition-shadow duration-200 hover:-translate-y-1">
+                            <div className="bg-gradient-to-br from-orange-400 to-red-500 w-14 h-14 rounded-xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <CreditCard className="h-7 w-7 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">Paiements sécurisés</h3>
+                            <p className="text-gray-600 leading-relaxed mb-4">Acceptez les paiements en ligne et générez des factures automatiquement.</p>
+                            <span className="text-orange-600 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                                En savoir plus <ChevronRight className="h-4 w-4" />
+                            </span>
+                        </div>
+
+                        <div className="group bg-gradient-to-br from-gray-50 to-cyan-50 p-8 rounded-2xl border border-gray-100 hover:shadow-2xl transition-shadow duration-200 hover:-translate-y-1">
+                            <div className="bg-gradient-to-br from-cyan-400 to-teal-500 w-14 h-14 rounded-xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <BarChart3 className="h-7 w-7 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">Statistiques avancées</h3>
+                            <p className="text-gray-600 leading-relaxed mb-4">Suivez vos performances avec des tableaux de bord et analytics en temps réel.</p>
+                            <span className="text-cyan-600 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                                En savoir plus <ChevronRight className="h-4 w-4" />
+                            </span>
+                        </div>
+
+                        <div className="group bg-gradient-to-br from-gray-50 to-indigo-50 p-8 rounded-2xl border border-gray-100 hover:shadow-2xl transition-shadow duration-200 hover:-translate-y-1">
+                            <div className="bg-gradient-to-br from-indigo-400 to-violet-500 w-14 h-14 rounded-xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <Bell className="h-7 w-7 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-3">Notifications push</h3>
+                            <p className="text-gray-600 leading-relaxed mb-4">Restez informé en temps réel avec les notifications push sur tous vos appareils.</p>
+                            <span className="text-indigo-600 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
+                                En savoir plus <ChevronRight className="h-4 w-4" />
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Footer */}
+            <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white">
+                <div className="max-w-7xl mx-auto px-6 lg:px-16 py-16">
+                    <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12 mb-12">
+                        <div className="sm:col-span-2 md:col-span-2">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="bg-gradient-to-br from-sky-500 to-blue-600 p-2.5 rounded-xl">
+                                    <Calendar className="h-6 w-6 text-white" />
+                                </div>
+                                <span className="text-2xl font-bold">TAFF Events</span>
+                            </div>
+                            <p className="text-gray-400 leading-relaxed max-w-md">
+                                La plateforme moderne pour organiser et gérer vos événements professionnels. Billets, QR codes, statistiques et bien plus encore.
+                            </p>
+                        </div>
+
+                        <div>
+                            <h4 className="text-lg font-semibold mb-4">Plateforme</h4>
+                            <ul className="space-y-3">
+                                <li>
+                                    <Link href="/register" className="text-gray-400 hover:text-sky-400 transition flex items-center gap-1">
+                                        <ChevronRight className="h-3 w-3" /> Inscription
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link href="/login" className="text-gray-400 hover:text-sky-400 transition flex items-center gap-1">
+                                        <ChevronRight className="h-3 w-3" /> Connexion
+                                    </Link>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 className="text-lg font-semibold mb-4">Contact</h4>
+                            <ul className="space-y-3">
+                                <li className="text-gray-400">
+                                    contact@taff-events.com
+                                </li>
+                                <li className="text-gray-400">
+                                    Support 7j/7
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-gray-700 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <p className="text-gray-500 text-sm">
+                            &copy; {new Date().getFullYear()} TAFF Events. Tous droits réservés.
+                        </p>
+                        <div className="flex items-center gap-2 text-gray-500 text-sm">
+                            <Globe className="h-4 w-4" />
+                            Fait avec passion en France
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    )
+}
