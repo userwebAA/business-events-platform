@@ -19,10 +19,14 @@ export async function GET(
             return NextResponse.json({ error: 'Inscription non trouvée' }, { status: 404 });
         }
 
-        let ticket = await getTicketByRegistration(params.registrationId);
+        let ticket: any = await getTicketByRegistration(params.registrationId);
 
         if (!ticket) {
             ticket = await generateTicket(params.registrationId);
+        }
+
+        if (!ticket) {
+            return NextResponse.json({ error: 'Impossible de générer le billet' }, { status: 500 });
         }
 
         const formData = registration.formData as any;

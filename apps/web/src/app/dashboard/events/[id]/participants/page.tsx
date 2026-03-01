@@ -47,8 +47,8 @@ export default function ParticipantsPage() {
     const exportToCSV = () => {
         const headers = ['Nom', 'Email', 'Entreprise', 'Poste', 'Téléphone', 'Date d\'inscription'];
         const rows = registrations.map((reg) => [
-            reg.attendeeName,
-            reg.attendeeEmail,
+            (reg.formData as any).name || (reg.formData as any).firstName || '',
+            (reg.formData as any).email || '',
             reg.formData.company || '',
             reg.formData.position || '',
             reg.formData.phone || '',
@@ -163,11 +163,11 @@ export default function ParticipantsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div>
                                                 <div className="text-sm font-medium text-gray-900">
-                                                    {registration.attendeeName}
+                                                    {(registration.formData as any).name || (registration.formData as any).firstName || 'Participant'}
                                                 </div>
                                                 <div className="text-sm text-gray-500 flex items-center gap-1">
                                                     <Mail className="h-3 w-3" />
-                                                    {registration.attendeeEmail}
+                                                    {(registration.formData as any).email || ''}
                                                 </div>
                                             </div>
                                         </td>

@@ -160,7 +160,7 @@ export default function EventParticipantsPage() {
                                             </Link>
                                         ) : (
                                             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center text-white text-2xl font-bold shrink-0">
-                                                {registration.attendeeName?.charAt(0).toUpperCase() || 'U'}
+                                                {((registration.formData as any).name || (registration.formData as any).firstName || 'U').charAt(0).toUpperCase()}
                                             </div>
                                         )}
                                         <div className="flex-1 min-w-0">
@@ -174,7 +174,7 @@ export default function EventParticipantsPage() {
                                                 </Link>
                                             ) : (
                                                 <h3 className="font-semibold text-gray-900 text-lg truncate">
-                                                    {registration.attendeeName}
+                                                    {(registration.formData as any).name || (registration.formData as any).firstName || 'Participant'}
                                                 </h3>
                                             )}
                                             {profile?.position && (
@@ -223,16 +223,16 @@ export default function EventParticipantsPage() {
                                             </div>
                                         )}
 
-                                        {registration.attendeeEmail && (
+                                        {(registration.formData as any).email && (
                                             <div className="flex items-start gap-3">
                                                 <Mail className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
                                                 <div>
                                                     <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
                                                     <a
-                                                        href={`mailto:${registration.attendeeEmail}`}
+                                                        href={`mailto:${(registration.formData as any).email}`}
                                                         className="text-sm text-sky-600 hover:text-sky-700 break-all"
                                                     >
-                                                        {registration.attendeeEmail}
+                                                        {(registration.formData as any).email}
                                                     </a>
                                                 </div>
                                             </div>

@@ -21,7 +21,7 @@ export const subscribeToPushNotifications = async (): Promise<PushSubscription |
         }
 
         const registration = await navigator.serviceWorker.ready;
-        
+
         const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
         if (!vapidPublicKey) {
             console.error('Clé VAPID publique manquante');
@@ -32,7 +32,7 @@ export const subscribeToPushNotifications = async (): Promise<PushSubscription |
 
         const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: convertedVapidKey,
+            applicationServerKey: convertedVapidKey as BufferSource,
         });
 
         const token = localStorage.getItem('token');

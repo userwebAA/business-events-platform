@@ -44,7 +44,7 @@ export default function RegistrationSuccessPage() {
                                 headers: {
                                     'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify({ registrationId: regId }),
+                                body: JSON.stringify({ registrationId }),
                             });
 
                             if (addressResponse.ok) {
