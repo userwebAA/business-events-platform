@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
                 }
 
                 // Calculer le montant total à transférer
-                const totalAmount = payments.reduce((sum, p) => sum + p.creatorAmount, 0);
+                const totalAmount = payments.reduce((sum: number, p) => sum + p.creatorAmount, 0);
                 const totalAmountCents = Math.round(totalAmount * 100);
 
                 if (totalAmountCents <= 0) {
