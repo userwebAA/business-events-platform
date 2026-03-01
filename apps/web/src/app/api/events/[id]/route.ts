@@ -21,16 +21,37 @@ export async function GET(
             );
         }
 
+        // Récupérer le profil public de l'organisateur
+        let organizer = null;
+        if (event.organizerId) {
+            organizer = await prisma.user.findUnique({
+                where: { id: event.organizerId },
+                select: {
+                    id: true,
+                    name: true,
+                    firstName: true,
+                    lastName: true,
+                    photo: true,
+                    company: true,
+                    position: true,
+                    bio: true,
+                    location: true,
+                },
+            });
+        }
+
+        const eventWithOrganizer = { ...event, organizer };
+
         // Masquer l'adresse exacte pour les événements payants
         // L'adresse sera accessible uniquement via /api/events/:id/address après inscription
         if (event.type === 'paid') {
             return NextResponse.json({
-                ...event,
-                address: '🔒 Adresse révélée après inscription', // Masquer l'adresse
+                ...eventWithOrganizer,
+                address: '🔒 Adresse révélée après inscription',
             });
         }
 
-        return NextResponse.json(event);
+        return NextResponse.json(eventWithOrganizer);
     } catch (error) {
         console.error(' Erreur récupération événement:', error);
         return NextResponse.json(
@@ -46,7 +67,7 @@ export async function PUT(
 ) {
     try {
         const body = await request.json();
-        
+
         const event = await prisma.event.update({
             where: { id: params.id },
             data: {

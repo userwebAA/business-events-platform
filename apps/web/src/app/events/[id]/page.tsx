@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, ArrowRight, Ticket, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, ArrowRight, Ticket, AlertTriangle, XCircle, Loader2, User as UserIcon, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import { Event } from 'shared';
@@ -24,6 +24,7 @@ export default function EventDetailPage() {
     const [cancelReason, setCancelReason] = useState('');
     const [cancelling, setCancelling] = useState(false);
     const [cancelError, setCancelError] = useState('');
+    const [registrationId, setRegistrationId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -43,6 +44,12 @@ export default function EventDetailPage() {
                     const registeredIds = JSON.parse(sessionStorage.getItem('registeredEvents') || '[]');
                     const isUserRegistered = registeredIds.includes(params.id);
                     setIsRegistered(isUserRegistered);
+
+                    // Récupérer le registrationId pour la facture
+                    const storedRegId = sessionStorage.getItem(`registration_${params.id}`);
+                    if (storedRegId) {
+                        setRegistrationId(storedRegId);
+                    }
 
                     // Si inscrit et événement payant, récupérer l'adresse
                     if (isUserRegistered && data.type === 'paid') {
@@ -333,6 +340,47 @@ export default function EventDetailPage() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
+                        {/* Organisateur */}
+                        {(event as any).organizer && (
+                            <Link
+                                href={`/profile/${(event as any).organizer.id}`}
+                                className="block bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 hover:border-sky-200 hover:shadow-md transition-all group"
+                            >
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Organisé par</p>
+                                <div className="flex items-center gap-3">
+                                    {(event as any).organizer.photo ? (
+                                        <img
+                                            src={(event as any).organizer.photo}
+                                            alt={(event as any).organizer.name}
+                                            className="w-12 h-12 rounded-xl object-cover shrink-0 ring-2 ring-gray-100 group-hover:ring-sky-200 transition-all"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center shrink-0 group-hover:from-sky-200 group-hover:to-blue-200 transition-all">
+                                            <UserIcon className="h-6 w-6 text-sky-500" />
+                                        </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-gray-900 truncate group-hover:text-sky-600 transition-colors">
+                                            {(event as any).organizer.firstName && (event as any).organizer.lastName
+                                                ? `${(event as any).organizer.firstName} ${(event as any).organizer.lastName}`
+                                                : (event as any).organizer.name}
+                                        </p>
+                                        {(event as any).organizer.company && (
+                                            <p className="text-xs text-gray-400 truncate">{(event as any).organizer.position ? `${(event as any).organizer.position} · ` : ''}{(event as any).organizer.company}</p>
+                                        )}
+                                        {(event as any).organizer.location && !((event as any).organizer.company) && (
+                                            <p className="text-xs text-gray-400 truncate flex items-center gap-1">
+                                                <MapPin className="h-3 w-3" />
+                                                {(event as any).organizer.location}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-sky-400 transition-colors shrink-0" />
+                                </div>
+                                <p className="text-[11px] text-sky-500 font-medium mt-3 group-hover:underline">Voir le profil</p>
+                            </Link>
+                        )}
+
                         {/* Carte d'action */}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6 lg:sticky lg:top-24">
                             {/* Jauge de places */}
@@ -374,6 +422,15 @@ export default function EventDetailPage() {
                                         <Check className="h-5 w-5" />
                                         Inscrit
                                     </div>
+                                    {event.type === 'paid' && event.price && registrationId && (
+                                        <button
+                                            onClick={() => window.open(`/api/registrations/${registrationId}/invoice`, '_blank')}
+                                            className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3.5 rounded-xl font-bold hover:from-emerald-600 hover:to-green-700 transition-all shadow-md border border-emerald-400"
+                                        >
+                                            <FileText className="h-4 w-4" />
+                                            Télécharger la facture
+                                        </button>
+                                    )}
                                     <Link
                                         href={`/events/${event.id}/participants`}
                                         className="w-full bg-sky-50 text-sky-700 py-3.5 rounded-xl font-bold hover:bg-sky-100 transition-all flex items-center justify-center gap-2 border border-sky-200"
@@ -417,8 +474,8 @@ export default function EventDetailPage() {
                                 )}
                             </button>
 
-                            {/* Bouton annuler (organisateur/admin) */}
-                            {isOrganizer && !isCancelled && (
+                            {/* Bouton annuler (organisateur/admin, seulement si pas passé) */}
+                            {isOrganizer && !isCancelled && event?.date && new Date(event.date) > new Date() && (
                                 <button
                                     onClick={() => setShowCancelModal(true)}
                                     className="w-full mt-3 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-2 border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300"

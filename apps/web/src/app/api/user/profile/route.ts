@@ -109,7 +109,19 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
         }
 
-        return NextResponse.json({ user });
+        // Récupérer profileVideo séparément (résilient si colonne pas encore en DB)
+        let profileVideo: string | null = null;
+        try {
+            const extraData = await prisma.user.findUnique({
+                where: { id: decoded.userId },
+                select: { profileVideo: true },
+            });
+            profileVideo = (extraData as any)?.profileVideo || null;
+        } catch (e) {
+            // Colonne pas encore créée
+        }
+
+        return NextResponse.json({ user: { ...user, profileVideo } });
 
     } catch (error) {
         console.error('Erreur récupération profil:', error);

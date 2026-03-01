@@ -51,14 +51,18 @@ export async function GET(request: NextRequest) {
             };
 
             // Mouvements bancaires (paiements Stripe réels)
+            const calcStripeFee = (amount: number) => Math.round((amount * 0.0325 + 0.25) * 100) / 100;
+
             const stripeMovements = payments.map(p => {
                 const ev = eventMap[p.eventId];
+                const stripeFee = calcStripeFee(p.amount);
                 return {
                     id: p.id,
                     type: 'payment' as const,
                     stripePaymentId: p.stripePaymentId,
                     amount: p.amount,
                     platformFee: p.platformFee,
+                    stripeFee,
                     creatorAmount: p.creatorAmount,
                     currency: p.currency,
                     status: p.status,
@@ -72,6 +76,8 @@ export async function GET(request: NextRequest) {
                     organizerEmail: organizerMap[p.organizerId]?.email || '',
                     payoutEligibleAt: p.payoutEligibleAt,
                     payoutId: p.payoutId,
+                    refundedAt: p.refundedAt,
+                    stripeRefundId: p.stripeRefundId,
                     createdAt: p.createdAt,
                 };
             });
@@ -137,6 +143,10 @@ export async function GET(request: NextRequest) {
             const totalStripeRevenue = succeededPayments.reduce((sum, p) => sum + p.amount, 0);
             const totalPlatformFees = succeededPayments.reduce((sum, p) => sum + p.platformFee, 0);
             const totalCreatorAmount = succeededPayments.reduce((sum, p) => sum + p.creatorAmount, 0);
+            const totalStripeFees = succeededPayments.reduce((sum, p) => sum + calcStripeFee(p.amount), 0);
+            const refundedPayments = payments.filter(p => p.status === 'REFUNDED');
+            const totalRefunded = refundedPayments.reduce((sum, p) => sum + p.amount, 0);
+            const totalRefundedStripeFees = refundedPayments.reduce((sum, p) => sum + calcStripeFee(p.amount), 0);
             const totalLegacyRevenue = legacyMovements.reduce((sum, m) => sum + m.revenue, 0);
 
             // Paiements en attente de payout
@@ -158,12 +168,16 @@ export async function GET(request: NextRequest) {
                     totalLegacyRevenue,
                     totalPlatformFees,
                     totalCreatorAmount,
+                    totalStripeFees,
                     totalPayments: succeededPayments.length,
                     totalPayouts: payouts.filter(p => p.status === 'COMPLETED').length,
                     pendingPayoutAmount: eligibleForPayout.reduce((sum, p) => sum + p.creatorAmount, 0),
                     waitingPayoutAmount: waitingForPayout.reduce((sum, p) => sum + p.creatorAmount, 0),
                     pendingPayoutCount: eligibleForPayout.length,
                     waitingPayoutCount: waitingForPayout.length,
+                    totalRefunded,
+                    totalRefundedCount: refundedPayments.length,
+                    totalRefundedStripeFees,
                 },
             });
         } else {

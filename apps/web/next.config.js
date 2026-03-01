@@ -1,6 +1,7 @@
 const isDev = process.env.NODE_ENV === 'development'
+const enablePWAinDev = process.env.PWA_DEV === 'true'
 
-const withPWA = isDev 
+const withPWA = (isDev && !enablePWAinDev)
   ? (config) => config
   : require('@ducanh2912/next-pwa').default({
       dest: 'public',

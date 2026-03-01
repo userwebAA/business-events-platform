@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
+import CookieBanner from '@/components/CookieBanner'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -54,7 +55,10 @@ export default function RootLayout({
                 <meta name="msapplication-TileColor" content="#2563eb" />
             </head>
             <body className={inter.className}>
-                <AuthProvider>{children}</AuthProvider>
+                <AuthProvider>
+                    {children}
+                    <CookieBanner />
+                </AuthProvider>
             </body>
         </html>
     )

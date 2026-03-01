@@ -12,7 +12,7 @@ export async function middleware(request: NextRequest) {
   const isProfileSetup = pathname.startsWith('/profile/setup');
 
   // Routes publiques accessibles sans authentification
-  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/profile', '/events'];
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/profile', '/events', '/privacy'];
   const isPublicRoute = !isProfileSetup && publicRoutes.some(route =>
     route === '/' ? pathname === '/' : pathname.startsWith(route)
   );

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { sendConfirmationEmailWithTicket } from '@/lib/emailTemplates';
+import { sendConfirmationEmailWithTicket, sendNewRegistrationEmail } from '@/lib/emailTemplates';
 import { generateTicket } from '@/lib/ticketService';
 import { generateTicketPDF } from '@/lib/pdfTicketGenerator';
 import { verifyToken } from '@/lib/jwt';
@@ -105,6 +105,29 @@ export async function POST(request: NextRequest) {
             console.error('⚠️ Email manquant dans formData:', formData);
         }
 
+        // Notifier l'organisateur de la nouvelle inscription
+        try {
+            const organizer = await prisma.user.findUnique({
+                where: { id: registration.event.organizerId },
+                select: { email: true, name: true, firstName: true },
+            });
+            if (organizer?.email) {
+                await sendNewRegistrationEmail({
+                    to: organizer.email,
+                    organizerName: organizer.firstName || organizer.name || 'Organisateur',
+                    attendeeName: userName,
+                    attendeeEmail: userEmail || 'Non renseigné',
+                    eventTitle: registration.event.title,
+                    eventDate: registration.event.date,
+                    eventId: registration.event.id,
+                    currentAttendees: registration.event.currentAttendees + 1,
+                    maxAttendees: registration.event.maxAttendees,
+                });
+            }
+        } catch (notifError) {
+            console.error('⚠️ Erreur envoi notification organisateur:', notifError);
+        }
+
         // Retourner l'inscription avec l'ID pour accéder à l'adresse de manière sécurisée
         const responseData = {
             ...registration,
@@ -145,13 +168,46 @@ export async function GET(request: NextRequest) {
             },
         });
 
-        const responseData = registrations.map(registration => ({
-            ...registration,
-            // Masquer l'adresse dans la réponse, elle sera accessible via /api/events/:id/address
-            event: registration.event.type === 'paid'
-                ? { ...registration.event, address: '🔒 Adresse révélée après inscription' }
-                : registration.event,
-        }));
+        // Récupérer les emails des inscriptions pour matcher avec les profils utilisateurs
+        const emails = registrations
+            .map(r => {
+                const fd = r.formData as any;
+                return fd?.email || fd?.mail || null;
+            })
+            .filter(Boolean) as string[];
+
+        // Chercher les utilisateurs correspondants par email
+        const users = emails.length > 0
+            ? await prisma.user.findMany({
+                where: { email: { in: emails } },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    firstName: true,
+                    lastName: true,
+                    photo: true,
+                    company: true,
+                    position: true,
+                },
+            })
+            : [];
+
+        const usersByEmail = new Map(users.map(u => [u.email, u]));
+
+        const responseData = registrations.map(registration => {
+            const fd = registration.formData as any;
+            const email = fd?.email || fd?.mail || null;
+            const matchedUser = email ? usersByEmail.get(email) || null : null;
+
+            return {
+                ...registration,
+                userProfile: matchedUser,
+                event: registration.event.type === 'paid'
+                    ? { ...registration.event, address: '🔒 Adresse révélée après inscription' }
+                    : registration.event,
+            };
+        });
 
         return NextResponse.json(responseData);
     } catch (error) {

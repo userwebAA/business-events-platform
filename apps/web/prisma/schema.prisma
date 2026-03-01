@@ -107,6 +107,8 @@ model User {
   location    String?
   skills      String[]
   linkedin    String?
+  profileVideo String?  // URL de la vidéo de présentation (30s max)
+  hiddenProfileEvents String[]  // IDs d'événements masqués du profil public
   
   // État du profil
   profileCompleted Boolean @default(false)

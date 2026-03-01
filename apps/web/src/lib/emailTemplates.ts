@@ -393,6 +393,141 @@ export async function sendConfirmationEmailWithTicket(
   }
 }
 
+interface NewRegistrationEmailParams {
+  to: string;
+  organizerName: string;
+  attendeeName: string;
+  attendeeEmail: string;
+  eventTitle: string;
+  eventDate: Date;
+  eventId: string;
+  currentAttendees: number;
+  maxAttendees?: number | null;
+}
+
+export async function sendNewRegistrationEmail({
+  to,
+  organizerName,
+  attendeeName,
+  attendeeEmail,
+  eventTitle,
+  eventDate,
+  eventId,
+  currentAttendees,
+  maxAttendees,
+}: NewRegistrationEmailParams) {
+  const formattedDate = new Date(eventDate).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const spotsInfo = maxAttendees
+    ? `${currentAttendees}/${maxAttendees} places occupées`
+    : `${currentAttendees} inscrit${currentAttendees > 1 ? 's' : ''}`;
+
+  const mailOptions = {
+    from: `"TAFF Events - No Reply" <${process.env.SMTP_USER}>`,
+    to,
+    subject: `🎉 Nouvelle inscription - ${eventTitle}`,
+    html: `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nouvelle inscription</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f3f4f6; padding: 40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 32px;">🎉 Nouvelle inscription !</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <p style="font-size: 18px; color: #334155; margin: 0 0 20px 0;">
+                Bonjour <strong>${organizerName}</strong>,
+              </p>
+              <p style="font-size: 16px; color: #64748b; line-height: 1.6; margin: 0 0 30px 0;">
+                Bonne nouvelle ! Un nouveau participant vient de s'inscrire à votre événement <strong style="color: #10b981;">${eventTitle}</strong>.
+              </p>
+
+              <!-- Participant info -->
+              <div style="background: #f0fdf4; padding: 25px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #10b981;">
+                <h3 style="color: #10b981; margin: 0 0 15px 0; font-size: 18px;">👤 Nouveau participant</h3>
+                <div style="margin-bottom: 10px;">
+                  <p style="margin: 0; color: #94a3b8; font-size: 14px;">Nom</p>
+                  <p style="margin: 5px 0 0 0; color: #334155; font-size: 16px; font-weight: bold;">${attendeeName}</p>
+                </div>
+                <div>
+                  <p style="margin: 0; color: #94a3b8; font-size: 14px;">Email</p>
+                  <p style="margin: 5px 0 0 0; color: #334155; font-size: 16px;">
+                    <a href="mailto:${attendeeEmail}" style="color: #10b981; text-decoration: none;">${attendeeEmail}</a>
+                  </p>
+                </div>
+              </div>
+
+              <!-- Event stats -->
+              <div style="background: #f8fafc; padding: 25px; border-radius: 10px; margin: 20px 0;">
+                <h3 style="color: #0ea5e9; margin: 0 0 15px 0; font-size: 18px;">📊 État de l'événement</h3>
+                <div style="margin-bottom: 10px;">
+                  <p style="margin: 0; color: #94a3b8; font-size: 14px;">Date</p>
+                  <p style="margin: 5px 0 0 0; color: #334155; font-size: 16px; font-weight: bold;">${formattedDate}</p>
+                </div>
+                <div>
+                  <p style="margin: 0; color: #94a3b8; font-size: 14px;">Inscriptions</p>
+                  <p style="margin: 5px 0 0 0; color: #334155; font-size: 16px; font-weight: bold;">${spotsInfo}</p>
+                </div>
+              </div>
+
+              <!-- CTA -->
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}/events/${eventId}/participants"
+                   style="display: inline-block; background: #10b981; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                  Voir les participants
+                </a>
+              </div>
+
+              <p style="font-size: 14px; color: #64748b; line-height: 1.6; margin: 20px 0 0 0;">
+                Continuez à promouvoir votre événement !<br>
+                <strong style="color: #0ea5e9;">L'équipe Business Events</strong>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+                Cet email a été envoyé automatiquement
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('✅ Email nouvelle inscription envoyé à:', to);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Erreur envoi email nouvelle inscription:', error);
+    return { success: false, error };
+  }
+}
+
 export async function sendEventCancelledEmail({
   to,
   eventTitle,

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
     ArrowLeft, User, Bell, Shield, Globe, Mail, Phone, MapPin,
     Save, Camera, Linkedin, Briefcase, Building, Loader2, Check,
-    ChevronRight, Lock, Trash2, AlertTriangle, Eye, EyeOff, Upload, FileCheck, Clock, X, CreditCard
+    ChevronRight, Lock, Trash2, AlertTriangle, Eye, EyeOff, Upload, FileCheck, Clock, X, CreditCard, Video
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +17,9 @@ export default function SettingsPage() {
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
     const [previewImage, setPreviewImage] = useState('');
+    const [profileVideo, setProfileVideo] = useState('');
+    const [uploadingVideo, setUploadingVideo] = useState(false);
+    const [videoError, setVideoError] = useState('');
 
     const [profile, setProfile] = useState({
         name: '',
@@ -88,6 +91,7 @@ export default function SettingsPage() {
                         skills: data.user.skills || [],
                     });
                     if (data.user.photo) setPreviewImage(data.user.photo);
+                    if (data.user.profileVideo) setProfileVideo(data.user.profileVideo);
                 }
                 if (identityRes.ok) {
                     const idData = await identityRes.json();
@@ -133,6 +137,74 @@ export default function SettingsPage() {
                 setProfile(prev => ({ ...prev, avatar: result }));
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setVideoError('');
+
+        if (!file.type.startsWith('video/')) {
+            setVideoError('Le fichier doit être une vidéo');
+            return;
+        }
+        if (file.size > 50 * 1024 * 1024) {
+            setVideoError('La vidéo ne doit pas dépasser 50 Mo');
+            return;
+        }
+
+        // Vérifier la durée
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        const url = URL.createObjectURL(file);
+        video.src = url;
+
+        video.onloadedmetadata = async () => {
+            URL.revokeObjectURL(url);
+            if (video.duration > 35) {
+                setVideoError('La vidéo ne doit pas dépasser 30 secondes');
+                return;
+            }
+
+            setUploadingVideo(true);
+            try {
+                const token = localStorage.getItem('token');
+                const formData = new FormData();
+                formData.append('video', file);
+                const res = await fetch('/api/user/profile-video', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData,
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setProfileVideo(data.videoUrl);
+                } else {
+                    const err = await res.json();
+                    setVideoError(err.error || 'Erreur upload');
+                }
+            } catch (err) {
+                setVideoError('Erreur de connexion');
+            } finally {
+                setUploadingVideo(false);
+            }
+        };
+    };
+
+    const handleVideoDelete = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/user/profile-video', {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (res.ok) {
+                setProfileVideo('');
+            }
+        } catch (err) {
+            console.error('Erreur suppression vidéo:', err);
         }
     };
 
@@ -238,7 +310,7 @@ export default function SettingsPage() {
                         </div>
 
                         {/* Nav - horizontal on mobile, vertical on desktop */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 flex lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-1 gap-1">
                             {sections.map((section) => {
                                 const Icon = section.icon;
                                 const isActive = activeSection === section.id;
@@ -246,7 +318,7 @@ export default function SettingsPage() {
                                     <button
                                         key={section.id}
                                         onClick={() => setActiveSection(section.id)}
-                                        className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all text-sm whitespace-nowrap shrink-0 lg:w-full ${isActive
+                                        className={`flex items-center justify-between px-3 py-3 rounded-xl transition-all text-sm lg:w-full ${isActive
                                             ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-200/50'
                                             : 'text-gray-600 hover:bg-gray-50'
                                             }`}
@@ -417,6 +489,67 @@ export default function SettingsPage() {
                                                     placeholder="Parlez-nous de vous, votre parcours, vos passions..."
                                                 />
                                                 <p className="text-xs text-gray-400 mt-1">{profile.bio.length}/500 caractères</p>
+                                            </div>
+
+                                            <div className="border-t border-gray-100 pt-6">
+                                                <div className="flex items-center justify-between mb-4">
+                                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Vidéo de présentation</h3>
+                                                    <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-full">Optionnel</span>
+                                                </div>
+                                                <p className="text-sm text-gray-500 mb-4">Enregistrez une courte vidéo de 30 secondes pour vous présenter aux autres participants. C&apos;est un excellent moyen de créer du lien !</p>
+
+                                                {profileVideo ? (
+                                                    <div className="space-y-3">
+                                                        <div className="rounded-xl overflow-hidden bg-black aspect-video relative">
+                                                            <video
+                                                                src={profileVideo}
+                                                                controls
+                                                                className="w-full h-full object-contain"
+                                                                preload="metadata"
+                                                            />
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <label className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-sky-50 text-sky-600 rounded-xl text-sm font-semibold hover:bg-sky-100 transition-all border border-sky-100 cursor-pointer">
+                                                                <Video className="h-4 w-4" />
+                                                                Remplacer
+                                                                <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" />
+                                                            </label>
+                                                            <button
+                                                                onClick={handleVideoDelete}
+                                                                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-100 transition-all border border-red-100"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                                Supprimer
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <label className={`flex flex-col items-center justify-center gap-3 py-8 border-2 border-dashed rounded-xl cursor-pointer transition-all ${uploadingVideo ? 'border-sky-300 bg-sky-50' : 'border-gray-200 hover:border-sky-300 hover:bg-sky-50/50'}`}>
+                                                        {uploadingVideo ? (
+                                                            <>
+                                                                <Loader2 className="h-8 w-8 text-sky-500 animate-spin" />
+                                                                <p className="text-sm text-sky-600 font-medium">Upload en cours...</p>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="w-14 h-14 bg-sky-100 rounded-xl flex items-center justify-center">
+                                                                    <Video className="h-7 w-7 text-sky-500" />
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <p className="text-sm font-semibold text-gray-700">Cliquez pour ajouter une vidéo</p>
+                                                                    <p className="text-xs text-gray-400 mt-1">30 secondes max · MP4, MOV · 50 Mo max</p>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" disabled={uploadingVideo} />
+                                                    </label>
+                                                )}
+                                                {videoError && (
+                                                    <p className="text-sm text-red-500 mt-2 flex items-center gap-1.5">
+                                                        <AlertTriangle className="h-3.5 w-3.5" />
+                                                        {videoError}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             <div className="border-t border-gray-100 pt-6">

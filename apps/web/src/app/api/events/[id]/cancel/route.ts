@@ -34,6 +34,8 @@ export async function POST(
             return NextResponse.json({ error: 'Événement non trouvé' }, { status: 404 });
         }
 
+        console.log(`🔴 Annulation événement "${event.title}" - ${event.registrations.length} inscription(s) en base`);
+
         // Vérifier que l'utilisateur est l'organisateur ou admin
         const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
         if (!user) {
@@ -94,10 +96,12 @@ export async function POST(
 
         // Envoyer un email d'annulation à chaque inscrit
         let emailsSent = 0;
+        console.log(`📧 Envoi emails d'annulation à ${event.registrations.length} inscrit(s)...`);
         for (const registration of event.registrations) {
             const formData = registration.formData as any;
             const email = formData.email || formData.mail;
             const name = formData.name || formData.firstName || formData.nom || 'Participant';
+            console.log(`📧 Inscription ${registration.id}: email=${email}, name=${name}, formData keys=${Object.keys(formData || {}).join(',')}`);
 
             if (email) {
                 try {
@@ -108,9 +112,12 @@ export async function POST(
                         userName: name,
                     });
                     emailsSent++;
+                    console.log(`✅ Email annulation envoyé à ${email}`);
                 } catch (emailError) {
                     console.error(`⚠️ Erreur envoi email annulation à ${email}:`, emailError);
                 }
+            } else {
+                console.warn(`⚠️ Pas d'email trouvé pour inscription ${registration.id}`);
             }
         }
 

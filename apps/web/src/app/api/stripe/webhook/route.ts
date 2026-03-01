@@ -73,6 +73,15 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const organizerId = metadata.organizerId;
     const formData = metadata.formData ? JSON.parse(metadata.formData) : {};
 
+    // Vérifier si déjà traité (le fallback API peut l'avoir fait)
+    const existingPayment = await prisma.payment.findFirst({
+        where: { stripeSessionId: session.id },
+    });
+    if (existingPayment) {
+        console.log('⏩ Session déjà traitée (fallback), skip webhook:', session.id);
+        return;
+    }
+
     // Récupérer l'événement
     const eventData = await prisma.event.findUnique({ where: { id: eventId } });
     if (!eventData) {

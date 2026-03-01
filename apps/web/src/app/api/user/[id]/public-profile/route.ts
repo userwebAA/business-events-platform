@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyToken } from '@/lib/auth';
 
 export async function GET(
     request: NextRequest,
@@ -7,6 +8,21 @@ export async function GET(
 ) {
     try {
         const { id } = params;
+
+        // Vérifier si c'est le propriétaire du profil
+        let currentUserId: string | null = null;
+        try {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader) {
+                const token = authHeader.replace('Bearer ', '');
+                const decoded = verifyToken(token);
+                if (decoded) currentUserId = decoded.userId;
+            }
+        } catch (e) {
+            // Token invalide, on continue en mode public
+        }
+
+        const isOwner = currentUserId === id;
 
         const user = await prisma.user.findUnique({
             where: { id },
@@ -31,6 +47,20 @@ export async function GET(
 
         if (!user) {
             return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+        }
+
+        // Récupérer les champs ajoutés récemment séparément (résilient si colonne pas encore en DB)
+        let hiddenProfileEvents: string[] = [];
+        let profileVideo: string | null = null;
+        try {
+            const userData = await prisma.user.findUnique({
+                where: { id },
+                select: { hiddenProfileEvents: true, profileVideo: true },
+            });
+            hiddenProfileEvents = userData?.hiddenProfileEvents || [];
+            profileVideo = (userData as any)?.profileVideo || null;
+        } catch (e) {
+            // Colonnes pas encore créées en DB
         }
 
         // Fetch events organized by this user (only published, non-private)
@@ -81,9 +111,15 @@ export async function GET(
             // Table peut ne pas encore exister
         }
 
+        // Filtrer les événements masqués pour les visiteurs
+        const visibleEvents = isOwner
+            ? organizedEvents
+            : organizedEvents.filter(e => !hiddenProfileEvents.includes(e.id));
+
         return NextResponse.json({
-            user,
-            organizedEvents,
+            user: { ...user, profileVideo },
+            organizedEvents: visibleEvents,
+            hiddenProfileEvents: isOwner ? hiddenProfileEvents : [],
             eventBadges,
             stats: {
                 totalEventsOrganized,

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, ArrowLeft, Plus, Trash2, Clock, Lock, Copy, Check, MapPin, Image, Users, Euro, Type, FileText, Sparkles, ChevronRight, Upload, Shield, Loader2 } from 'lucide-react';
+import { Calendar, ArrowLeft, Plus, Trash2, Clock, Lock, Copy, Check, MapPin, Image, Users, Euro, Type, FileText, Sparkles, ChevronRight, Upload, Shield, Loader2, RefreshCw, AlertTriangle, X } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { eventSchema, EventInput } from 'shared';
@@ -27,6 +27,9 @@ export default function CreateEventPage() {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [createdEvent, setCreatedEvent] = useState<any>(null);
     const [copied, setCopied] = useState(false);
+    const [myPastEvents, setMyPastEvents] = useState<any[]>([]);
+    const [showDuplicateSelector, setShowDuplicateSelector] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
 
     // Vérifier le statut d'identité
     useEffect(() => {
@@ -58,6 +61,7 @@ export default function CreateEventPage() {
         formState: { errors },
         watch,
         control,
+        setValue,
     } = useForm<EventInput>({
         resolver: zodResolver(eventSchema),
         defaultValues: {
@@ -67,6 +71,50 @@ export default function CreateEventPage() {
         },
     });
 
+
+    // Charger les événements existants pour la duplication
+    useEffect(() => {
+        const fetchMyEvents = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const res = await fetch('/api/events/my-events', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setMyPastEvents(data);
+                }
+            } catch (e) { /* silently fail */ }
+        };
+        fetchMyEvents();
+    }, []);
+
+    const handleDuplicate = (event: any) => {
+        setValue('title', event.title);
+        setValue('description', event.description);
+        setValue('location', event.location);
+        setValue('address', event.address || '');
+        if (event.maxAttendees) setValue('maxAttendees', event.maxAttendees);
+        if (event.price) setValue('price', event.price);
+        setEventType(event.type || 'free');
+        setIsPrivate(event.isPrivate || false);
+        if (event.registrationFields?.length > 0) {
+            setRegistrationFields(event.registrationFields.map((f: any) => ({
+                id: Date.now().toString() + '_' + f.name,
+                name: f.name,
+                label: f.label,
+                type: f.type,
+                required: f.required,
+                options: f.options || [],
+                placeholder: f.placeholder || '',
+            })));
+        }
+        if (event.imageUrl) {
+            setImagePreview(event.imageUrl);
+        }
+        setShowDuplicateSelector(false);
+    };
 
     const onSubmit = async (data: EventInput) => {
         console.log('🚀 onSubmit appelé !');
@@ -109,11 +157,13 @@ export default function CreateEventPage() {
             } else {
                 const errorData = await response.json();
                 console.error('❌ Erreur API:', errorData);
-                alert('Erreur lors de la création de l\'événement: ' + (errorData.error || 'Erreur inconnue'));
+                setFormError('Erreur lors de la création : ' + (errorData.error || 'Erreur inconnue'));
+                setTimeout(() => setFormError(null), 5000);
             }
         } catch (error) {
             console.error('💥 Error creating event:', error);
-            alert('Erreur lors de la création de l\'événement: ' + error);
+            setFormError('Erreur lors de la création de l\'événement');
+            setTimeout(() => setFormError(null), 5000);
         } finally {
             setLoading(false);
         }
@@ -317,10 +367,85 @@ export default function CreateEventPage() {
                     <p className="text-gray-500 text-lg">Remplissez les informations pour créer votre événement</p>
                 </div>
 
+                {/* Dupliquer un événement existant */}
+                {myPastEvents.length > 0 && (
+                    <div className="mb-6">
+                        <button
+                            type="button"
+                            onClick={() => setShowDuplicateSelector(!showDuplicateSelector)}
+                            className="w-full flex items-center justify-between gap-3 px-5 py-4 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl hover:border-amber-300 transition-all group"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="bg-amber-100 p-2 rounded-xl group-hover:bg-amber-200 transition-colors">
+                                    <RefreshCw className="h-5 w-5 text-amber-600" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-bold text-amber-900">Dupliquer un événement existant</p>
+                                    <p className="text-xs text-amber-600">Pré-remplir le formulaire à partir d'un ancien événement</p>
+                                </div>
+                            </div>
+                            <ChevronRight className={`h-5 w-5 text-amber-400 transition-transform ${showDuplicateSelector ? 'rotate-90' : ''}`} />
+                        </button>
+
+                        {showDuplicateSelector && (
+                            <div className="mt-3 bg-white border border-gray-200 rounded-2xl shadow-lg max-h-80 overflow-y-auto divide-y divide-gray-100">
+                                {myPastEvents.map((event) => (
+                                    <button
+                                        key={event.id}
+                                        type="button"
+                                        onClick={() => handleDuplicate(event)}
+                                        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-sky-50 transition-colors text-left"
+                                    >
+                                        {event.imageUrl ? (
+                                            <img src={event.imageUrl} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-gray-200" />
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center shrink-0">
+                                                <Calendar className="h-5 w-5 text-sky-500" />
+                                            </div>
+                                        )}
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-bold text-gray-900 truncate">{event.title}</p>
+                                            <p className="text-xs text-gray-500">{event.location} · {event.type === 'paid' ? `${event.price}€` : 'Gratuit'}</p>
+                                        </div>
+                                        <Copy className="h-4 w-4 text-gray-400 shrink-0" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit(onSubmit, (errors) => {
-                    console.error('Erreurs de validation:', errors);
-                    alert('Veuillez remplir tous les champs obligatoires');
+                    const messages: string[] = [];
+                    if (errors.title) messages.push('Titre');
+                    if (errors.description) messages.push('Description');
+                    if (errors.date) messages.push('Date et heure');
+                    if (errors.location) messages.push('Ville');
+                    if (errors.address) messages.push('Adresse');
+                    if (errors.price) messages.push('Prix');
+                    setFormError(messages.length > 0 ? `Champs manquants : ${messages.join(', ')}` : 'Veuillez remplir tous les champs obligatoires');
+                    setTimeout(() => setFormError(null), 5000);
                 })} className="space-y-6">
+
+                    {/* Toast d'erreur */}
+                    {formError && (
+                        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+                            <div className="flex items-center gap-3 px-5 py-4 bg-red-50 border-2 border-red-200 rounded-2xl shadow-2xl max-w-lg">
+                                <div className="bg-red-100 p-2 rounded-xl shrink-0">
+                                    <AlertTriangle className="h-5 w-5 text-red-600" />
+                                </div>
+                                <p className="text-sm font-semibold text-red-800 flex-1">{formError}</p>
+                                <button
+                                    type="button"
+                                    onClick={() => setFormError(null)}
+                                    className="text-red-400 hover:text-red-600 transition-colors shrink-0"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Section 1 - Informations générales */}
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-7 space-y-5 sm:space-y-6">
                         <div className="flex items-center gap-3 mb-2">
@@ -492,7 +617,8 @@ export default function CreateEventPage() {
                                             const file = e.target.files?.[0];
                                             if (file) {
                                                 if (file.size > 5 * 1024 * 1024) {
-                                                    alert('L\'image ne doit pas dépasser 5MB');
+                                                    setFormError('L\'image ne doit pas dépasser 5MB');
+                                                    setTimeout(() => setFormError(null), 5000);
                                                     return;
                                                 }
                                                 setImageFile(file);

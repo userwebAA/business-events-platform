@@ -12,6 +12,7 @@ export default function RegisterPage() {
     const [name, setName] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [acceptPrivacy, setAcceptPrivacy] = useState(false);
     const router = useRouter();
     const { register } = useAuth();
 
@@ -26,6 +27,11 @@ export default function RegisterPage() {
 
         if (password.length < 6) {
             setError('Le mot de passe doit contenir au moins 6 caractères');
+            return;
+        }
+
+        if (!acceptPrivacy) {
+            setError('Vous devez accepter la politique de confidentialité');
             return;
         }
 
@@ -186,9 +192,26 @@ export default function RegisterPage() {
                             </div>
                         </div>
 
+                        <div className="flex items-start gap-3">
+                            <input
+                                id="privacy"
+                                type="checkbox"
+                                checked={acceptPrivacy}
+                                onChange={(e) => setAcceptPrivacy(e.target.checked)}
+                                className="mt-1 h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                            />
+                            <label htmlFor="privacy" className="text-sm text-gray-500 cursor-pointer">
+                                J&apos;accepte la{' '}
+                                <Link href="/privacy" target="_blank" className="text-emerald-600 hover:underline font-medium">
+                                    politique de confidentialité
+                                </Link>{' '}
+                                et le traitement de mes données personnelles.
+                            </label>
+                        </div>
+
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || !acceptPrivacy}
                             className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-4 rounded-xl text-lg font-bold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
                         >
                             {loading ? (

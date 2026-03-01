@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
                         product_data: {
                             name: event.title,
                             description: `Inscription à ${event.title}`,
-                            images: event.imageUrl ? [event.imageUrl] : [],
+                            images: event.imageUrl && event.imageUrl.startsWith('http') && event.imageUrl.length < 2048 ? [event.imageUrl] : [],
                         },
                         unit_amount: amountInCents,
                     },
@@ -95,10 +95,12 @@ export async function POST(request: NextRequest) {
         });
 
         return NextResponse.json({ url: session.url, sessionId: session.id });
-    } catch (error) {
-        console.error('Stripe Checkout error:', error);
+    } catch (error: any) {
+        console.error('❌ Stripe Checkout error:', error?.message || error);
+        console.error('❌ Stripe error type:', error?.type);
+        console.error('❌ Stripe error code:', error?.code);
         return NextResponse.json(
-            { error: 'Erreur lors de la création du paiement' },
+            { error: 'Erreur lors de la création du paiement: ' + (error?.message || 'Unknown') },
             { status: 500 }
         );
     }

@@ -2,13 +2,12 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Euro, Plus, Search, CheckCircle, Lock, ArrowRight, X, Filter, Clock, FileText, Briefcase, XCircle, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Users, Euro, Plus, Search, CheckCircle, Lock, ArrowRight, X, Filter, Clock, FileText, Briefcase, XCircle } from 'lucide-react';
 import { Event } from 'shared';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
-import DeleteModal from '@/components/DeleteModal';
 
 export default function EventsPage() {
     const { user } = useAuth();
@@ -20,8 +19,6 @@ export default function EventsPage() {
     const [locationFilter, setLocationFilter] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
-    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; eventId: string | null; eventTitle: string }>({ isOpen: false, eventId: null, eventTitle: '' });
-    const [deleting, setDeleting] = useState(false);
 
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
     const allEventsCache = useRef<Event[]>([]);
@@ -73,7 +70,12 @@ export default function EventsPage() {
             });
             if (response.ok) {
                 const data = await response.json();
-                setMyEvents(data.map((e: any) => ({ ...e, date: new Date(e.date) })));
+                const now = new Date();
+                setMyEvents(
+                    data
+                        .map((e: any) => ({ ...e, date: new Date(e.date) }))
+                        .filter((e: Event) => new Date(e.date) > now)
+                );
             }
         } catch (error) {
             console.error('Error fetching my events:', error);
@@ -111,27 +113,6 @@ export default function EventsPage() {
         }
     }, [filteredEvents]);
 
-    const handleDeleteEvent = async () => {
-        if (!deleteModal.eventId) return;
-        setDeleting(true);
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`/api/events/${deleteModal.eventId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` },
-            });
-            if (res.ok) {
-                setMyEvents(prev => prev.filter(e => e.id !== deleteModal.eventId));
-                setDeleteModal({ isOpen: false, eventId: null, eventTitle: '' });
-            } else {
-                alert('Erreur lors de la suppression');
-            }
-        } catch {
-            alert('Erreur lors de la suppression');
-        } finally {
-            setDeleting(false);
-        }
-    };
 
     const displayedEvents = activeTab === 'all' ? events : activeTab === 'registered' ? registeredEvents : myEvents;
     const hasActiveFilters = locationFilter || searchQuery || filter !== 'all';
@@ -464,45 +445,55 @@ export default function EventsPage() {
                                                 />
                                             </div>
                                         )}
-                                        <button
-                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteModal({ isOpen: true, eventId: event.id, eventTitle: event.title }); }}
-                                            className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-100 transition-all border border-red-200"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                            Supprimer l&apos;événement
-                                        </button>
                                     </div>
                                 )}
 
-                                {/* Bouton facture pour les inscriptions payantes */}
-                                {activeTab === 'registered' && event.type === 'paid' && event.price && (
-                                    <div className="px-5 pb-5">
-                                        <a
-                                            href={`/api/registrations/${sessionStorage.getItem(`registration_${event.id}`)}/invoice`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-4 py-3 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all font-bold shadow-md hover:shadow-lg text-sm"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                            Télécharger la facture
-                                        </a>
+                                {/* Indicateur événement passé pour les inscriptions */}
+                                {activeTab === 'registered' && new Date(event.date) <= new Date() && (
+                                    <div className="px-5 pb-2">
+                                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg">
+                                            <Clock className="h-3.5 w-3.5" />
+                                            Événement terminé
+                                        </span>
                                     </div>
                                 )}
+
+                                {/* Bouton facture pour les inscriptions payantes (disponible 2 mois) */}
+                                {activeTab === 'registered' && event.type === 'paid' && event.price && (() => {
+                                    const regId = sessionStorage.getItem(`registration_${event.id}`);
+                                    const regDate = sessionStorage.getItem(`registration_date_${event.id}`);
+                                    const twoMonthsAgo = new Date();
+                                    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+                                    const isExpired = regDate && new Date(regDate) < twoMonthsAgo;
+                                    if (!regId) return null;
+                                    if (isExpired) {
+                                        return (
+                                            <div className="px-5 pb-5">
+                                                <div className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-400 px-4 py-3 rounded-xl text-sm font-medium cursor-not-allowed">
+                                                    <FileText className="h-4 w-4" />
+                                                    Facture expirée (2 mois)
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return (
+                                        <div className="px-5 pb-5">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); window.open(`/api/registrations/${regId}/invoice`, '_blank'); }}
+                                                className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-4 py-3 rounded-xl hover:from-emerald-600 hover:to-green-700 transition-all font-bold shadow-md hover:shadow-lg text-sm"
+                                            >
+                                                <FileText className="h-4 w-4" />
+                                                Télécharger la facture
+                                            </button>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         ))}
                     </div>
                 )}
             </div>
 
-            <DeleteModal
-                isOpen={deleteModal.isOpen}
-                onClose={() => setDeleteModal({ isOpen: false, eventId: null, eventTitle: '' })}
-                onConfirm={handleDeleteEvent}
-                title="Supprimer l'événement"
-                message={`Êtes-vous sûr de vouloir supprimer "${deleteModal.eventTitle}" ? Cette action est irréversible.`}
-                loading={deleting}
-            />
         </div>
     );
 }

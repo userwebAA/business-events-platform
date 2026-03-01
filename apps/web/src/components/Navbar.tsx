@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, LogOut, User, LayoutDashboard, Ticket, ChevronDown, Settings } from 'lucide-react';
+import { Calendar, LogOut, User, LayoutDashboard, Ticket, ChevronDown, Settings, Crown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -147,6 +147,12 @@ export default function Navbar() {
                                                     <Settings className="h-4 w-4 text-gray-400" />
                                                     Paramètres
                                                 </Link>
+                                                {user.role === 'SUPER_ADMIN' && (
+                                                    <Link href="/dashboard/admin/users" className="flex items-center gap-3 px-4 py-2.5 text-sm text-amber-700 hover:bg-amber-50 transition-colors" onClick={() => setShowUserMenu(false)}>
+                                                        <Crown className="h-4 w-4 text-amber-500" />
+                                                        Gestion utilisateurs
+                                                    </Link>
+                                                )}
                                             </div>
 
                                             <div className="border-t border-gray-100 pt-1">

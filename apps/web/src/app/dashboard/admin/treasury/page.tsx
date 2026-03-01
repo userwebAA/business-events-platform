@@ -16,6 +16,7 @@ interface StripeMovement {
     stripePaymentId: string;
     amount: number;
     platformFee: number;
+    stripeFee: number;
     creatorAmount: number;
     currency: string;
     status: string;
@@ -28,6 +29,8 @@ interface StripeMovement {
     organizerEmail: string;
     payoutEligibleAt: string;
     payoutId: string | null;
+    refundedAt: string | null;
+    stripeRefundId: string | null;
     createdAt: string;
 }
 
@@ -78,12 +81,16 @@ interface Summary {
     totalLegacyRevenue: number;
     totalPlatformFees: number;
     totalCreatorAmount: number;
+    totalStripeFees: number;
     totalPayments: number;
     totalPayouts: number;
     pendingPayoutAmount: number;
     waitingPayoutAmount: number;
     pendingPayoutCount: number;
     waitingPayoutCount: number;
+    totalRefunded: number;
+    totalRefundedCount: number;
+    totalRefundedStripeFees: number;
 }
 
 export default function AdminTreasuryPage() {
@@ -92,7 +99,7 @@ export default function AdminTreasuryPage() {
     const [legacyMovements, setLegacyMovements] = useState<LegacyMovement[]>([]);
     const [payouts, setPayouts] = useState<PayoutItem[]>([]);
     const [organizerStats, setOrganizerStats] = useState<OrganizerStat[]>([]);
-    const [summary, setSummary] = useState<Summary>({ totalRevenue: 0, totalStripeRevenue: 0, totalLegacyRevenue: 0, totalPlatformFees: 0, totalCreatorAmount: 0, totalPayments: 0, totalPayouts: 0, pendingPayoutAmount: 0, waitingPayoutAmount: 0, pendingPayoutCount: 0, waitingPayoutCount: 0 });
+    const [summary, setSummary] = useState<Summary>({ totalRevenue: 0, totalStripeRevenue: 0, totalLegacyRevenue: 0, totalPlatformFees: 0, totalCreatorAmount: 0, totalStripeFees: 0, totalPayments: 0, totalPayouts: 0, pendingPayoutAmount: 0, waitingPayoutAmount: 0, pendingPayoutCount: 0, waitingPayoutCount: 0, totalRefunded: 0, totalRefundedCount: 0, totalRefundedStripeFees: 0 });
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'payments' | 'payouts' | 'organizers'>('payments');
     const [expandedOrganizer, setExpandedOrganizer] = useState<string | null>(null);
@@ -126,6 +133,7 @@ export default function AdminTreasuryPage() {
     };
 
     const getPayoutStatus = (m: StripeMovement) => {
+        if (m.status === 'REFUNDED') return { label: 'Remboursé', color: 'text-red-600 bg-red-50', icon: ArrowDownRight };
         if (m.payoutId) return { label: 'Viré', color: 'text-emerald-600 bg-emerald-50', icon: CheckCircle };
         const eligible = new Date(m.payoutEligibleAt) <= new Date();
         if (eligible) return { label: 'Éligible', color: 'text-amber-600 bg-amber-50', icon: Clock };
@@ -165,7 +173,7 @@ export default function AdminTreasuryPage() {
                 ) : (
                     <>
                         {/* Résumé global */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-8">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4 mb-8">
                             <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl shadow-lg p-4 sm:p-5 text-white">
                                 <Euro className="h-6 w-6 opacity-80 mb-2" />
                                 <p className="text-xs opacity-80">Recette totale</p>
@@ -176,16 +184,29 @@ export default function AdminTreasuryPage() {
                                 <p className="text-xs opacity-80">Commission plateforme</p>
                                 <p className="text-xl sm:text-2xl font-bold">{summary.totalPlatformFees.toFixed(2)}€</p>
                             </div>
+                            <div className="bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl shadow-lg p-4 sm:p-5 text-white">
+                                <CreditCard className="h-6 w-6 opacity-80 mb-2" />
+                                <p className="text-xs opacity-80">Commission Stripe</p>
+                                <p className="text-xl sm:text-2xl font-bold">{summary.totalStripeFees.toFixed(2)}€</p>
+                            </div>
                             <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl shadow-lg p-4 sm:p-5 text-white">
                                 <ArrowUpRight className="h-6 w-6 opacity-80 mb-2" />
                                 <p className="text-xs opacity-80">Versé aux créateurs</p>
-                                <p className="text-xl sm:text-2xl font-bold">{summary.totalCreatorAmount.toFixed(2)}€</p>
+                                <p className="text-xl sm:text-2xl font-bold">{(summary.totalCreatorAmount - summary.totalStripeFees).toFixed(2)}€</p>
                             </div>
                             <div className="bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl shadow-lg p-4 sm:p-5 text-white">
                                 <CreditCard className="h-6 w-6 opacity-80 mb-2" />
                                 <p className="text-xs opacity-80">Paiements Stripe</p>
                                 <p className="text-xl sm:text-2xl font-bold">{summary.totalPayments}</p>
                             </div>
+                            {summary.totalRefundedCount > 0 && (
+                                <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl shadow-lg p-4 sm:p-5 text-white">
+                                    <ArrowDownRight className="h-6 w-6 opacity-80 mb-2" />
+                                    <p className="text-xs opacity-80">Remboursements</p>
+                                    <p className="text-xl sm:text-2xl font-bold">-{summary.totalRefunded.toFixed(2)}€</p>
+                                    <p className="text-xs opacity-70">{summary.totalRefundedCount} remb. · Frais Stripe perdus: {summary.totalRefundedStripeFees.toFixed(2)}€</p>
+                                </div>
+                            )}
                             <div className="bg-white rounded-2xl shadow-sm border border-amber-200 p-4 sm:p-5">
                                 <Clock className="h-6 w-6 text-amber-500 mb-2" />
                                 <p className="text-xs text-gray-500">En transit (7j)</p>
@@ -238,6 +259,7 @@ export default function AdminTreasuryPage() {
                                                     <th className="text-left px-5 py-3 font-semibold hidden md:table-cell">Date</th>
                                                     <th className="text-right px-5 py-3 font-semibold">Total</th>
                                                     <th className="text-right px-5 py-3 font-semibold hidden lg:table-cell">Commission</th>
+                                                    <th className="text-right px-5 py-3 font-semibold hidden lg:table-cell">Frais Stripe</th>
                                                     <th className="text-right px-5 py-3 font-semibold hidden lg:table-cell">Créateur</th>
                                                     <th className="text-center px-5 py-3 font-semibold">Statut</th>
                                                 </tr>
@@ -257,7 +279,8 @@ export default function AdminTreasuryPage() {
                                                             <td className="px-5 py-3 text-gray-500 hidden md:table-cell text-sm">{new Date(m.createdAt).toLocaleDateString('fr-FR')}</td>
                                                             <td className="px-5 py-3 text-right font-bold text-gray-900">{m.amount.toFixed(2)}€</td>
                                                             <td className="px-5 py-3 text-right text-violet-600 font-medium hidden lg:table-cell">{m.platformFee.toFixed(2)}€</td>
-                                                            <td className="px-5 py-3 text-right text-emerald-600 font-medium hidden lg:table-cell">{m.creatorAmount.toFixed(2)}€</td>
+                                                            <td className="px-5 py-3 text-right text-rose-500 font-medium hidden lg:table-cell">{m.stripeFee.toFixed(2)}€</td>
+                                                            <td className="px-5 py-3 text-right text-emerald-600 font-medium hidden lg:table-cell">{(m.creatorAmount - m.stripeFee).toFixed(2)}€</td>
                                                             <td className="px-5 py-3 text-center">
                                                                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${status.color}`}>
                                                                     <StatusIcon className="h-3 w-3" />
@@ -278,6 +301,7 @@ export default function AdminTreasuryPage() {
                                                         <td className="px-5 py-3 text-gray-600 hidden sm:table-cell text-sm">{m.organizerName}</td>
                                                         <td className="px-5 py-3 text-gray-500 hidden md:table-cell text-sm">{new Date(m.eventDate).toLocaleDateString('fr-FR')}</td>
                                                         <td className="px-5 py-3 text-right font-bold text-gray-700">{m.revenue.toFixed(2)}€</td>
+                                                        <td className="px-5 py-3 text-right text-gray-400 hidden lg:table-cell">—</td>
                                                         <td className="px-5 py-3 text-right text-gray-400 hidden lg:table-cell">—</td>
                                                         <td className="px-5 py-3 text-right text-gray-400 hidden lg:table-cell">—</td>
                                                         <td className="px-5 py-3 text-center">
@@ -329,9 +353,9 @@ export default function AdminTreasuryPage() {
                                                         <td className="px-5 py-3 text-right font-bold text-emerald-600">{p.amount.toFixed(2)}€</td>
                                                         <td className="px-5 py-3 text-center">
                                                             <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold ${p.status === 'COMPLETED' ? 'text-emerald-600 bg-emerald-50' :
-                                                                    p.status === 'PROCESSING' ? 'text-sky-600 bg-sky-50' :
-                                                                        p.status === 'FAILED' ? 'text-red-600 bg-red-50' :
-                                                                            'text-amber-600 bg-amber-50'
+                                                                p.status === 'PROCESSING' ? 'text-sky-600 bg-sky-50' :
+                                                                    p.status === 'FAILED' ? 'text-red-600 bg-red-50' :
+                                                                        'text-amber-600 bg-amber-50'
                                                                 }`}>
                                                                 {p.status === 'COMPLETED' ? <CheckCircle className="h-3 w-3" /> :
                                                                     p.status === 'FAILED' ? <AlertCircle className="h-3 w-3" /> :
@@ -390,8 +414,8 @@ export default function AdminTreasuryPage() {
                                                             <p className="text-sm font-bold text-violet-600">{org.platformFees.toFixed(2)}€</p>
                                                         </div>
                                                         <div className="text-right">
-                                                            <p className="text-xs text-gray-400">Créateur</p>
-                                                            <p className="text-lg font-bold text-emerald-600">{org.creatorAmount.toFixed(2)}€</p>
+                                                            <p className="text-xs text-gray-400">Créateur (net)</p>
+                                                            <p className="text-lg font-bold text-emerald-600">{(org.creatorAmount - stripeMovements.filter(m => m.organizerId === org.id && m.status === 'SUCCEEDED').reduce((sum, m) => sum + m.stripeFee, 0)).toFixed(2)}€</p>
                                                         </div>
                                                         {expandedOrganizer === org.id ? (
                                                             <ChevronUp className="h-4 w-4 text-gray-400" />
@@ -421,7 +445,7 @@ export default function AdminTreasuryPage() {
                                                                             <p className="text-xs text-gray-500">{new Date(m.createdAt).toLocaleDateString('fr-FR')} · {m.amount.toFixed(2)}€</p>
                                                                         </div>
                                                                         <div className="text-right shrink-0">
-                                                                            <p className="text-sm font-bold text-emerald-600">{m.creatorAmount.toFixed(2)}€</p>
+                                                                            <p className="text-sm font-bold text-emerald-600">{(m.creatorAmount - m.stripeFee).toFixed(2)}€</p>
                                                                             <span className={`inline-flex items-center gap-1 text-xs font-medium ${status.color} px-1.5 py-0.5 rounded`}>
                                                                                 <StatusIcon className="h-3 w-3" />{status.label}
                                                                             </span>

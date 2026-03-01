@@ -31,6 +31,16 @@ export async function GET(
       );
     }
 
+    // Vérifier que la facture n'a pas expiré (2 mois après l'inscription)
+    const twoMonthsAgo = new Date();
+    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+    if (new Date(registration.createdAt) < twoMonthsAgo) {
+      return NextResponse.json(
+        { error: 'Cette facture n\'est plus disponible (expirée après 2 mois)' },
+        { status: 410 }
+      );
+    }
+
     // Générer la facture HTML
     const invoiceNumber = generateInvoiceNumber(registration.id, registration.createdAt);
     const invoiceHTML = generateInvoiceHTML({
@@ -38,9 +48,9 @@ export async function GET(
       date: registration.createdAt,
       eventTitle: registration.event.title,
       eventDate: registration.event.date,
-      attendeeName: registration.formData.name || registration.formData.firstName || 'Participant',
-      attendeeEmail: registration.formData.email,
-      company: registration.formData.company,
+      attendeeName: (registration.formData as any)?.name || (registration.formData as any)?.firstName || 'Participant',
+      attendeeEmail: (registration.formData as any)?.email,
+      company: (registration.formData as any)?.company,
       price: registration.event.price,
       currency: registration.event.currency || 'EUR',
       registrationId: registration.id
@@ -51,10 +61,10 @@ export async function GET(
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
-    
+
     const page = await browser.newPage();
     await page.setContent(invoiceHTML, { waitUntil: 'networkidle0' });
-    
+
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
@@ -65,14 +75,14 @@ export async function GET(
         left: '20px'
       }
     });
-    
+
     await browser.close();
 
     // Retourner le PDF pour affichage dans le navigateur
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="facture-${invoiceNumber}.pdf"`
+        'Content-Disposition': `attachment; filename="facture-${invoiceNumber}.pdf"`
       }
     });
 

@@ -2,96 +2,50 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, MapPin, Users, Edit, Trash2, Eye, Plus, Lock, Copy, Check, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Eye, Plus, Lock, Copy, Check, ExternalLink, Clock, Euro, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Event } from 'shared';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Navbar from '@/components/Navbar';
-import DeleteModal from '@/components/DeleteModal';
 
 export default function MyEventsPage() {
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<'all' | 'upcoming' | 'past'>('all');
-    const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'public' | 'private'>('all');
+    const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
     const [copiedToken, setCopiedToken] = useState<string | null>(null);
-    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; eventId: string | null; eventTitle: string }>({
-        isOpen: false,
-        eventId: null,
-        eventTitle: '',
-    });
-    const [deleting, setDeleting] = useState(false);
+    const [showAllPast, setShowAllPast] = useState(false);
 
     useEffect(() => {
+        const fetchEvents = async () => {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const response = await fetch('/api/events/my-events', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setEvents(data.map((e: any) => ({ ...e, date: new Date(e.date) })));
+                }
+            } catch (error) {
+                console.error('Error fetching events:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
         fetchEvents();
     }, []);
 
-    const fetchEvents = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('/api/events');
-            const data = await response.json();
-            setEvents(data.map((e: any) => ({ ...e, date: new Date(e.date) })));
-        } catch (error) {
-            console.error('Error fetching events:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    const openDeleteModal = (id: string, title: string) => {
-        setDeleteModal({ isOpen: true, eventId: id, eventTitle: title });
-    };
+    const now = new Date();
+    const upcomingEvents = events.filter(e => new Date(e.date) > now).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const pastEvents = events.filter(e => new Date(e.date) <= now).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const displayedPast = showAllPast ? pastEvents : pastEvents.slice(0, 6);
+    const displayedEvents = tab === 'upcoming' ? upcomingEvents : displayedPast;
 
-    const closeDeleteModal = () => {
-        setDeleteModal({ isOpen: false, eventId: null, eventTitle: '' });
-    };
-
-    const handleDelete = async () => {
-        if (!deleteModal.eventId) return;
-
-        setDeleting(true);
-        try {
-            const response = await fetch(`/api/events/${deleteModal.eventId}`, {
-                method: 'DELETE',
-            });
-
-            if (response.ok) {
-                setEvents(events.filter(e => e.id !== deleteModal.eventId));
-                closeDeleteModal();
-            } else {
-                alert('Erreur lors de la suppression');
-            }
-        } catch (error) {
-            console.error('Error deleting event:', error);
-            alert('Erreur lors de la suppression');
-        } finally {
-            setDeleting(false);
-        }
-    };
-
-    const filteredEvents = events.filter(event => {
-        const now = new Date();
-        const eventDate = new Date(event.date);
-
-        // Filtre par date
-        if (filter === 'upcoming' && eventDate <= now) return false;
-        if (filter === 'past' && eventDate > now) return false;
-
-        // Filtre par visibilité
-        if (visibilityFilter === 'public' && event.isPrivate) return false;
-        if (visibilityFilter === 'private' && !event.isPrivate) return false;
-
-        return true;
-    });
-
-    const stats = {
-        total: events.length,
-        upcoming: events.filter(e => new Date(e.date) > new Date()).length,
-        past: events.filter(e => new Date(e.date) <= new Date()).length,
-        private: events.filter(e => e.isPrivate).length,
-        public: events.filter(e => !e.isPrivate).length,
-    };
+    const totalParticipants = events.reduce((sum, e) => sum + (e.currentAttendees || 0), 0);
+    const totalRevenue = events.filter(e => e.type === 'paid' && e.price).reduce((sum, e) => sum + ((e.price || 0) * (e.currentAttendees || 0)), 0);
 
     const copyPrivateLink = (token: string) => {
         const link = `${window.location.origin}/events/private/${token}`;
@@ -101,216 +55,273 @@ export default function MyEventsPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-sky-50">
             <Navbar />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-8">
-                    <Link href="/dashboard" className="inline-flex items-center text-sky-600 hover:text-sky-700 mb-4">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                {/* Header */}
+                <div className="mb-6 sm:mb-8">
+                    <Link href="/dashboard" className="inline-flex items-center text-sm text-gray-500 hover:text-sky-600 transition-colors mb-4">
+                        <ArrowLeft className="h-4 w-4 mr-1.5" />
                         Retour au tableau de bord
                     </Link>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-gray-900">Mes Événements</h1>
-                            <p className="text-gray-600 mt-1">Gérez tous vos événements créés</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Mes Événements</h1>
+                            <p className="text-gray-500 mt-1">Gérez tous vos événements créés</p>
                         </div>
-                        <Link href="/events/create" className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-xl font-bold hover:from-sky-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl">
+                        <Link href="/events/create" className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-xl font-bold hover:from-sky-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl text-sm sm:text-base">
                             <Plus className="h-5 w-5" />
                             Créer un événement
                         </Link>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-8">
-                    <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-sky-500">
-                        <p className="text-sm font-medium text-gray-600">Total</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
-                        <p className="text-sm font-medium text-gray-600">À venir</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{stats.upcoming}</p>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-gray-500">
-                        <p className="text-sm font-medium text-gray-600">Passés</p>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{stats.past}</p>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500">
-                        <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium text-gray-600">Publics</p>
-                        </div>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{stats.public}</p>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-red-500">
-                        <div className="flex items-center gap-2">
-                            <Lock className="h-4 w-4 text-red-600" />
-                            <p className="text-sm font-medium text-gray-600">Privés</p>
-                        </div>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{stats.private}</p>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl shadow-md p-4 mb-6 space-y-4">
-                    <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Filtrer par date :</p>
-                        <div className="flex gap-2">
-                            <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-lg font-medium transition ${filter === 'all' ? 'bg-sky-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                Tous ({stats.total})
-                            </button>
-                            <button onClick={() => setFilter('upcoming')} className={`px-4 py-2 rounded-lg font-medium transition ${filter === 'upcoming' ? 'bg-sky-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                À venir ({stats.upcoming})
-                            </button>
-                            <button onClick={() => setFilter('past')} className={`px-4 py-2 rounded-lg font-medium transition ${filter === 'past' ? 'bg-sky-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                Passés ({stats.past})
-                            </button>
+                {/* Stats cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-sky-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Calendar className="h-5 w-5 text-sky-600" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{events.length}</p>
+                                <p className="text-xs sm:text-sm text-gray-500 font-medium">Total</p>
+                            </div>
                         </div>
                     </div>
-                    <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Filtrer par visibilité :</p>
-                        <div className="flex gap-2">
-                            <button onClick={() => setVisibilityFilter('all')} className={`px-4 py-2 rounded-lg font-medium transition ${visibilityFilter === 'all' ? 'bg-sky-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                Tous
-                            </button>
-                            <button onClick={() => setVisibilityFilter('public')} className={`px-4 py-2 rounded-lg font-medium transition ${visibilityFilter === 'public' ? 'bg-sky-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                Publics ({stats.public})
-                            </button>
-                            <button onClick={() => setVisibilityFilter('private')} className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${visibilityFilter === 'private' ? 'bg-sky-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                <Lock className="h-4 w-4" />
-                                Privés ({stats.private})
-                            </button>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Clock className="h-5 w-5 text-emerald-600" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{upcomingEvents.length}</p>
+                                <p className="text-xs sm:text-sm text-gray-500 font-medium">À venir</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Users className="h-5 w-5 text-purple-600" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalParticipants}</p>
+                                <p className="text-xs sm:text-sm text-gray-500 font-medium">Participants</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+                                <Euro className="h-5 w-5 text-amber-600" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalRevenue}€</p>
+                                <p className="text-xs sm:text-sm text-gray-500 font-medium">Revenus brut</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                    {loading ? (
-                        <div className="text-center py-12">
-                            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
+                {/* Tabs */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-1.5 mb-6 grid grid-cols-2 gap-1.5">
+                    <button
+                        onClick={() => setTab('upcoming')}
+                        className={`px-4 py-3 rounded-xl font-semibold transition-all text-sm ${tab === 'upcoming'
+                            ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg'
+                            : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span>À venir</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${tab === 'upcoming' ? 'bg-white/20 text-white' : 'bg-sky-100 text-sky-700'}`}>
+                                {upcomingEvents.length}
+                            </span>
                         </div>
-                    ) : filteredEvents.length === 0 ? (
-                        <div className="text-center py-12">
-                            <Calendar className="mx-auto h-12 w-12 text-gray-400" />
-                            <h3 className="mt-2 text-lg font-medium text-gray-900">Aucun événement</h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                                {filter === 'all' ? 'Commencez par créer votre premier événement' : `Aucun événement ${filter === 'upcoming' ? 'à venir' : 'passé'}`}
-                            </p>
+                    </button>
+                    <button
+                        onClick={() => setTab('past')}
+                        className={`px-4 py-3 rounded-xl font-semibold transition-all text-sm ${tab === 'past'
+                            ? 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-lg'
+                            : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                    >
+                        <div className="flex items-center justify-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            <span>Passés</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${tab === 'past' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                                {pastEvents.length}
+                            </span>
                         </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Événement</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lieu</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Participants</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visibilité</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredEvents.map((event) => {
-                                        const isPast = new Date(event.date) <= new Date();
-                                        return (
-                                            <tr key={event.id} className="hover:bg-gray-50 transition">
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center">
-                                                        {event.imageUrl && <img src={event.imageUrl} alt={event.title} className="h-10 w-10 rounded-lg object-cover mr-3" />}
-                                                        <div>
-                                                            <div className="text-sm font-medium text-gray-900">{event.title}</div>
-                                                            <div className="text-sm text-gray-500 truncate max-w-xs">{event.description}</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">{format(new Date(event.date), 'dd MMM yyyy', { locale: fr })}</div>
-                                                    <div className="text-sm text-gray-500">{format(new Date(event.date), 'HH:mm')}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center text-sm text-gray-900">
-                                                        <MapPin className="h-4 w-4 mr-1 text-gray-400" />
-                                                        {event.location}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="flex items-center text-sm text-gray-900">
-                                                        <Users className="h-4 w-4 mr-1 text-gray-400" />
-                                                        {event.currentAttendees}{event.maxAttendees && ` / ${event.maxAttendees}`}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${event.type === 'free' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
-                                                        {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {event.isPrivate ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="px-2 py-1 inline-flex items-center gap-1 text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                                <Lock className="h-3 w-3" />
-                                                                Privé
-                                                            </span>
-                                                            {event.accessToken && (
-                                                                <button
-                                                                    onClick={() => copyPrivateLink(event.accessToken!)}
-                                                                    className="p-1 hover:bg-gray-100 rounded transition"
-                                                                    title="Copier le lien privé"
-                                                                >
-                                                                    {copiedToken === event.accessToken ? (
-                                                                        <Check className="h-4 w-4 text-green-600" />
-                                                                    ) : (
-                                                                        <Copy className="h-4 w-4 text-gray-600" />
-                                                                    )}
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                            Public
+                    </button>
+                </div>
+
+                {/* Content */}
+                {loading ? (
+                    <div className="text-center py-20">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
+                        <p className="text-gray-500 mt-4">Chargement...</p>
+                    </div>
+                ) : displayedEvents.length === 0 ? (
+                    <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+                        <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 ${tab === 'upcoming' ? 'bg-sky-100' : 'bg-gray-100'}`}>
+                            <Calendar className={`h-10 w-10 ${tab === 'upcoming' ? 'text-sky-400' : 'text-gray-400'}`} />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            {tab === 'upcoming' ? 'Aucun événement à venir' : 'Aucun événement passé'}
+                        </h3>
+                        <p className="text-gray-500 mb-6">
+                            {tab === 'upcoming' ? 'Créez votre premier événement !' : 'Vos événements passés apparaîtront ici.'}
+                        </p>
+                        {tab === 'upcoming' && (
+                            <Link href="/events/create" className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:from-sky-600 hover:to-blue-700 transition-all shadow-lg">
+                                <Plus className="h-4 w-4" />
+                                Créer un événement
+                            </Link>
+                        )}
+                    </div>
+                ) : (
+                    <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                            {displayedEvents.map((event) => {
+                                const isPast = new Date(event.date) <= now;
+                                const isCancelled = event.status === 'cancelled';
+                                return (
+                                    <div
+                                        key={event.id}
+                                        className={`bg-white rounded-2xl shadow-sm border overflow-hidden transition-all duration-200 ${isPast ? 'border-gray-200 opacity-80' : 'border-gray-100 hover:shadow-xl hover:border-sky-200 hover:-translate-y-1'}`}
+                                    >
+                                        {/* Image */}
+                                        <Link href={event.isPrivate && event.accessToken ? `/events/private/${event.accessToken}` : `/events/${event.id}`}>
+                                            {event.imageUrl ? (
+                                                <div className="h-40 sm:h-44 bg-gray-200 overflow-hidden relative">
+                                                    <img src={event.imageUrl} alt={event.title} className={`w-full h-full object-cover ${isPast ? 'grayscale' : ''}`} />
+                                                    <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
+                                                        <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm ${event.type === 'free' ? 'bg-emerald-500/90 text-white' : 'bg-blue-500/90 text-white'}`}>
+                                                            {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
                                                         </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isPast ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'}`}>
-                                                        {isPast ? 'Terminé' : 'Actif'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        {event.isPrivate && event.accessToken ? (
-                                                            <a
-                                                                href={`/events/private/${event.accessToken}`}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-sky-600 hover:text-sky-900 p-2 hover:bg-sky-50 rounded-lg transition"
-                                                                title="Voir (lien privé)"
-                                                            >
-                                                                <ExternalLink className="h-4 w-4" />
-                                                            </a>
-                                                        ) : (
-                                                            <Link href={`/events/${event.id}`} className="text-sky-600 hover:text-sky-900 p-2 hover:bg-sky-50 rounded-lg transition" title="Voir">
-                                                                <Eye className="h-4 w-4" />
-                                                            </Link>
+                                                        {event.isPrivate && (
+                                                            <span className="px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm bg-rose-500/90 text-white flex items-center gap-1">
+                                                                <Lock className="h-3 w-3" /> Privé
+                                                            </span>
                                                         )}
-                                                        <button onClick={() => alert('Fonctionnalité à venir')} className="text-gray-600 hover:text-gray-900 p-2 hover:bg-gray-50 rounded-lg transition" title="Modifier">
-                                                            <Edit className="h-4 w-4" />
-                                                        </button>
-                                                        <button onClick={() => openDeleteModal(event.id, event.title)} className="text-red-600 hover:text-red-900 p-2 hover:bg-red-50 rounded-lg transition" title="Supprimer">
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </button>
+                                                        {isCancelled && (
+                                                            <span className="px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm bg-red-600/90 text-white flex items-center gap-1">
+                                                                <XCircle className="h-3 w-3" /> Annulé
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
+                                                    {isPast && (
+                                                        <div className="absolute top-3 right-3">
+                                                            <span className="px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm bg-gray-800/80 text-white">Terminé</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div className={`h-40 sm:h-44 flex items-center justify-center relative ${isPast ? 'bg-gray-100' : 'bg-gradient-to-br from-sky-100 to-blue-100'}`}>
+                                                    <Calendar className={`h-16 w-16 ${isPast ? 'text-gray-300' : 'text-sky-300'}`} />
+                                                    <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
+                                                        <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md ${event.type === 'free' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'}`}>
+                                                            {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
+                                                        </span>
+                                                        {event.isPrivate && (
+                                                            <span className="px-3 py-1 rounded-lg text-xs font-bold shadow-md bg-rose-500 text-white flex items-center gap-1">
+                                                                <Lock className="h-3 w-3" /> Privé
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {isPast && (
+                                                        <div className="absolute top-3 right-3">
+                                                            <span className="px-3 py-1 rounded-lg text-xs font-bold shadow-md bg-gray-800/80 text-white">Terminé</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </Link>
 
-                <DeleteModal isOpen={deleteModal.isOpen} onClose={closeDeleteModal} onConfirm={handleDelete} title="Supprimer l'événement" message={`Êtes-vous sûr de vouloir supprimer "${deleteModal.eventTitle}" ? Cette action est irréversible.`} loading={deleting} />
+                                        {/* Content */}
+                                        <div className="p-4 sm:p-5">
+                                            <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 line-clamp-1">{event.title}</h3>
+                                            <p className="text-gray-500 text-sm mb-3 line-clamp-2 leading-relaxed">{event.description}</p>
+
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                    <div className="w-7 h-7 bg-sky-50 rounded-lg flex items-center justify-center shrink-0">
+                                                        <Clock className="h-3.5 w-3.5 text-sky-500" />
+                                                    </div>
+                                                    <span className="font-medium text-xs sm:text-sm">{format(new Date(event.date), 'EEEE d MMM yyyy · HH:mm', { locale: fr })}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                    <div className="w-7 h-7 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
+                                                        <MapPin className="h-3.5 w-3.5 text-purple-500" />
+                                                    </div>
+                                                    <span className="font-medium text-xs sm:text-sm truncate">{event.location}</span>
+                                                </div>
+                                            </div>
+
+                                            {/* Participants bar */}
+                                            <div className="mt-3 pt-3 border-t border-gray-100">
+                                                <div className="flex items-center justify-between text-sm mb-1.5">
+                                                    <span className="text-gray-500 font-medium text-xs">Participants</span>
+                                                    <span className="font-bold text-sky-600 text-xs">{event.currentAttendees}{event.maxAttendees ? ` / ${event.maxAttendees}` : ''}</span>
+                                                </div>
+                                                {event.maxAttendees && event.maxAttendees > 0 && (
+                                                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                                                        <div
+                                                            className={`h-1.5 rounded-full transition-all ${isPast ? 'bg-gray-400' : 'bg-gradient-to-r from-sky-500 to-blue-600'}`}
+                                                            style={{ width: `${Math.min((event.currentAttendees / event.maxAttendees) * 100, 100)}%` }}
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Actions */}
+                                            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-2">
+                                                {event.isPrivate && event.accessToken ? (
+                                                    <a href={`/events/private/${event.accessToken}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-600 rounded-xl text-xs sm:text-sm font-semibold hover:bg-sky-100 transition-all">
+                                                        <ExternalLink className="h-3.5 w-3.5" /> Voir
+                                                    </a>
+                                                ) : (
+                                                    <Link href={`/events/${event.id}`} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-sky-50 text-sky-600 rounded-xl text-xs sm:text-sm font-semibold hover:bg-sky-100 transition-all">
+                                                        <Eye className="h-3.5 w-3.5" /> Voir
+                                                    </Link>
+                                                )}
+                                                {event.isPrivate && event.accessToken && (
+                                                    <button
+                                                        onClick={() => copyPrivateLink(event.accessToken!)}
+                                                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-50 text-purple-600 rounded-xl text-xs sm:text-sm font-semibold hover:bg-purple-100 transition-all"
+                                                        title="Copier le lien privé"
+                                                    >
+                                                        {copiedToken === event.accessToken ? <><Check className="h-3.5 w-3.5" /> Copié</> : <><Copy className="h-3.5 w-3.5" /> Lien</>}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Show more button for past events */}
+                        {tab === 'past' && pastEvents.length > 6 && (
+                            <div className="text-center mt-6">
+                                <button
+                                    onClick={() => setShowAllPast(!showAllPast)}
+                                    className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all text-sm"
+                                >
+                                    {showAllPast ? (
+                                        <><ChevronUp className="h-4 w-4" /> Voir moins</>
+                                    ) : (
+                                        <><ChevronDown className="h-4 w-4" /> Voir les {pastEvents.length - 6} autres</>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
+
             </div>
         </div>
     );

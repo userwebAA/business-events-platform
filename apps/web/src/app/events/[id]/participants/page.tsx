@@ -3,20 +3,28 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Phone, Building, Users, Briefcase, Linkedin } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Building, Users, Briefcase, Linkedin, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Badge from '@/components/Badge';
 import { Event, Registration, BadgeType } from 'shared';
+
+interface UserProfile {
+    id: string;
+    name: string;
+    firstName: string | null;
+    lastName: string | null;
+    photo: string | null;
+    company: string | null;
+    position: string | null;
+}
 
 export default function EventParticipantsPage() {
     const params = useParams();
     const eventId = params.id as string;
     const [event, setEvent] = useState<Event | null>(null);
-    const [registrations, setRegistrations] = useState<Registration[]>([]);
+    const [registrations, setRegistrations] = useState<(Registration & { userProfile?: UserProfile | null })[]>([]);
     const [loading, setLoading] = useState(true);
     const [isRegistered, setIsRegistered] = useState(false);
-    const [canAccessList, setCanAccessList] = useState(false);
-    const [timeUntilAccess, setTimeUntilAccess] = useState<string>('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -35,31 +43,8 @@ export default function EventParticipantsPage() {
                 };
                 setEvent(eventWithDate);
 
-                // Vérifier si on est à 30 minutes ou moins de l'événement
-                const now = new Date();
-                const eventDate = new Date(eventData.date);
-                const thirtyMinutesBefore = new Date(eventDate.getTime() - 30 * 60 * 1000);
-                const canAccess = now >= thirtyMinutesBefore;
-                setCanAccessList(canAccess);
-
-                // Calculer le temps restant
-                if (!canAccess) {
-                    const msUntilAccess = thirtyMinutesBefore.getTime() - now.getTime();
-                    const hoursUntil = Math.floor(msUntilAccess / (1000 * 60 * 60));
-                    const minutesUntil = Math.floor((msUntilAccess % (1000 * 60 * 60)) / (1000 * 60));
-
-                    if (hoursUntil > 24) {
-                        const daysUntil = Math.floor(hoursUntil / 24);
-                        setTimeUntilAccess(`${daysUntil} jour${daysUntil > 1 ? 's' : ''}`);
-                    } else if (hoursUntil > 0) {
-                        setTimeUntilAccess(`${hoursUntil}h ${minutesUntil}min`);
-                    } else {
-                        setTimeUntilAccess(`${minutesUntil} minute${minutesUntil > 1 ? 's' : ''}`);
-                    }
-                }
-
-                // Si inscrit ET accès autorisé, récupérer la liste des participants
-                if (userIsRegistered && canAccess) {
+                // Si inscrit, récupérer la liste des participants (accès immédiat)
+                if (userIsRegistered) {
                     const registrationsRes = await fetch(`/api/registrations?eventId=${eventId}`);
                     const registrationsData = await registrationsRes.json();
                     setRegistrations(registrationsData);
@@ -118,50 +103,6 @@ export default function EventParticipantsPage() {
         );
     }
 
-    if (!canAccessList) {
-        return (
-            <div className="min-h-screen bg-gray-50">
-                <Navbar />
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                    <div className="bg-white rounded-xl shadow-md p-8 text-center">
-                        <div className="mx-auto h-16 w-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                            <svg className="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Liste bientôt disponible</h2>
-                        <p className="text-gray-600 mb-4">
-                            La liste des participants avec leurs coordonnées sera accessible <strong>30 minutes avant l'événement</strong>.
-                        </p>
-                        <div className="bg-sky-50 border border-sky-200 rounded-lg p-4 mb-6">
-                            <p className="text-sm text-sky-800">
-                                <strong>Disponible dans :</strong> {timeUntilAccess}
-                            </p>
-                            {event && (
-                                <p className="text-xs text-sky-600 mt-1">
-                                    Événement le {event.date.toLocaleDateString('fr-FR', {
-                                        weekday: 'long',
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    })}
-                                </p>
-                            )}
-                        </div>
-                        <Link
-                            href={`/events/${eventId}`}
-                            className="inline-block bg-sky-500 text-white px-6 py-3 rounded-lg hover:bg-sky-600 transition"
-                        >
-                            Retour à l'événement
-                        </Link>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <div className="min-h-screen bg-gray-50">
             <Navbar />
@@ -194,110 +135,155 @@ export default function EventParticipantsPage() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {registrations.map((registration) => (
-                            <div
-                                key={registration.id}
-                                className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
-                            >
-                                {/* Avatar et nom */}
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">
-                                        {registration.attendeeName?.charAt(0).toUpperCase() || 'U'}
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-semibold text-gray-900 text-lg">
-                                            {registration.attendeeName}
-                                        </h3>
-                                        <p className="text-sm text-gray-500">
-                                            Inscrit le {new Date(registration.createdAt).toLocaleDateString('fr-FR')}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Badges */}
-                                {registration.formData.badges && registration.formData.badges.length > 0 && (
-                                    <div className="flex flex-wrap gap-2 mb-4">
-                                        {registration.formData.badges.map((badgeType: BadgeType) => (
-                                            <Badge key={badgeType} type={badgeType} size="sm" />
-                                        ))}
-                                    </div>
-                                )}
-
-                                {/* Informations */}
-                                <div className="space-y-3 border-t pt-4">
-                                    {registration.formData.company && (
-                                        <div className="flex items-start gap-3">
-                                            <Building className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Entreprise</p>
-                                                <p className="text-sm font-medium text-gray-900">
-                                                    {registration.formData.company}
+                        {registrations.map((registration) => {
+                            const profile = (registration as any).userProfile as UserProfile | null;
+                            return (
+                                <div
+                                    key={registration.id}
+                                    className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow"
+                                >
+                                    {/* Avatar et nom */}
+                                    <div className="flex items-center gap-4 mb-4">
+                                        {profile ? (
+                                            <Link href={`/profile/${profile.id}`} className="shrink-0">
+                                                {profile.photo ? (
+                                                    <img
+                                                        src={profile.photo}
+                                                        alt={profile.firstName || profile.name}
+                                                        className="w-16 h-16 rounded-full object-cover ring-2 ring-sky-100 hover:ring-sky-300 transition-all"
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold ring-2 ring-sky-100 hover:ring-sky-300 transition-all">
+                                                        {(profile.firstName || profile.name || 'U').charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
+                                            </Link>
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-300 to-gray-400 flex items-center justify-center text-white text-2xl font-bold shrink-0">
+                                                {registration.attendeeName?.charAt(0).toUpperCase() || 'U'}
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            {profile ? (
+                                                <Link href={`/profile/${profile.id}`} className="group">
+                                                    <h3 className="font-semibold text-gray-900 text-lg group-hover:text-sky-600 transition-colors truncate">
+                                                        {profile.firstName && profile.lastName
+                                                            ? `${profile.firstName} ${profile.lastName}`
+                                                            : profile.name}
+                                                    </h3>
+                                                </Link>
+                                            ) : (
+                                                <h3 className="font-semibold text-gray-900 text-lg truncate">
+                                                    {registration.attendeeName}
+                                                </h3>
+                                            )}
+                                            {profile?.position && (
+                                                <p className="text-sm text-gray-500 truncate">
+                                                    {profile.position}{profile.company ? ` · ${profile.company}` : ''}
                                                 </p>
-                                            </div>
+                                            )}
+                                            <p className="text-xs text-gray-400 mt-0.5">
+                                                Inscrit le {new Date(registration.createdAt).toLocaleDateString('fr-FR')}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Badges */}
+                                    {registration.formData.badges && registration.formData.badges.length > 0 && (
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                            {registration.formData.badges.map((badgeType: BadgeType) => (
+                                                <Badge key={badgeType} type={badgeType} size="sm" />
+                                            ))}
                                         </div>
                                     )}
 
-                                    {registration.formData.position && (
-                                        <div className="flex items-start gap-3">
-                                            <Briefcase className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Poste</p>
-                                                <p className="text-sm font-medium text-gray-900">
-                                                    {registration.formData.position}
-                                                </p>
+                                    {/* Informations */}
+                                    <div className="space-y-3 border-t pt-4">
+                                        {registration.formData.company && !profile?.company && (
+                                            <div className="flex items-start gap-3">
+                                                <Building className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
+                                                <div>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-wide">Entreprise</p>
+                                                    <p className="text-sm font-medium text-gray-900">
+                                                        {registration.formData.company}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {registration.attendeeEmail && (
-                                        <div className="flex items-start gap-3">
-                                            <Mail className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
-                                                <a
-                                                    href={`mailto:${registration.attendeeEmail}`}
-                                                    className="text-sm text-sky-600 hover:text-sky-700 break-all"
-                                                >
-                                                    {registration.attendeeEmail}
-                                                </a>
+                                        {registration.formData.position && !profile?.position && (
+                                            <div className="flex items-start gap-3">
+                                                <Briefcase className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
+                                                <div>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-wide">Poste</p>
+                                                    <p className="text-sm font-medium text-gray-900">
+                                                        {registration.formData.position}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {registration.formData.phone && (
-                                        <div className="flex items-start gap-3">
-                                            <Phone className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Téléphone</p>
-                                                <a
-                                                    href={`tel:${registration.formData.phone}`}
-                                                    className="text-sm text-sky-600 hover:text-sky-700"
-                                                >
-                                                    {registration.formData.phone}
-                                                </a>
+                                        {registration.attendeeEmail && (
+                                            <div className="flex items-start gap-3">
+                                                <Mail className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
+                                                <div>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                                                    <a
+                                                        href={`mailto:${registration.attendeeEmail}`}
+                                                        className="text-sm text-sky-600 hover:text-sky-700 break-all"
+                                                    >
+                                                        {registration.attendeeEmail}
+                                                    </a>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
-                                    {registration.formData.linkedin && (
-                                        <div className="flex items-start gap-3">
-                                            <Linkedin className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
-                                            <div>
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">LinkedIn</p>
-                                                <a
-                                                    href={registration.formData.linkedin}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-sm text-sky-600 hover:text-sky-700 break-all"
-                                                >
-                                                    Voir le profil
-                                                </a>
+                                        {registration.formData.phone && (
+                                            <div className="flex items-start gap-3">
+                                                <Phone className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
+                                                <div>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-wide">Téléphone</p>
+                                                    <a
+                                                        href={`tel:${registration.formData.phone}`}
+                                                        className="text-sm text-sky-600 hover:text-sky-700"
+                                                    >
+                                                        {registration.formData.phone}
+                                                    </a>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
+
+                                        {registration.formData.linkedin && (
+                                            <div className="flex items-start gap-3">
+                                                <Linkedin className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
+                                                <div>
+                                                    <p className="text-xs text-gray-500 uppercase tracking-wide">LinkedIn</p>
+                                                    <a
+                                                        href={registration.formData.linkedin}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-sm text-sky-600 hover:text-sky-700 break-all"
+                                                    >
+                                                        Voir le profil LinkedIn
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Bouton profil */}
+                                    {profile && (
+                                        <Link
+                                            href={`/profile/${profile.id}`}
+                                            className="mt-4 flex items-center justify-center gap-2 w-full py-2.5 bg-sky-50 text-sky-600 rounded-xl text-sm font-semibold hover:bg-sky-100 transition-all border border-sky-100"
+                                        >
+                                            Voir le profil
+                                            <ChevronRight className="h-4 w-4" />
+                                        </Link>
                                     )}
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

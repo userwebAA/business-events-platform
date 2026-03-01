@@ -23,6 +23,7 @@ interface PublicProfile {
     location: string | null;
     skills: string[];
     linkedin: string | null;
+    profileVideo: string | null;
     profileCompleted: boolean;
     identityStatus: string;
     role: string;
@@ -59,6 +60,7 @@ export default function PublicProfilePage() {
     const [events, setEvents] = useState<OrganizedEvent[]>([]);
     const [stats, setStats] = useState({ totalEventsOrganized: 0, totalAttendees: 0 });
     const [badges, setBadges] = useState<EventBadge[]>([]);
+    const [hiddenEventIds, setHiddenEventIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
@@ -68,7 +70,10 @@ export default function PublicProfilePage() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const res = await fetch(`/api/user/${userId}/public-profile`);
+                const token = localStorage.getItem('token');
+                const headers: Record<string, string> = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                const res = await fetch(`/api/user/${userId}/public-profile`, { headers });
                 if (!res.ok) {
                     if (res.status === 404) {
                         setError('Utilisateur non trouvé');
@@ -82,6 +87,7 @@ export default function PublicProfilePage() {
                 setEvents(data.organizedEvents);
                 setStats(data.stats);
                 setBadges(data.eventBadges || []);
+                setHiddenEventIds(data.hiddenProfileEvents || []);
             } catch (err) {
                 setError('Erreur de connexion');
             } finally {
@@ -100,6 +106,27 @@ export default function PublicProfilePage() {
         : '';
 
     const isVerified = profile?.identityStatus === 'verified' || profile?.role === 'ADMIN' || profile?.role === 'SUPER_ADMIN';
+
+    const toggleEventVisibility = async (eventId: string) => {
+        const isCurrentlyHidden = hiddenEventIds.includes(eventId);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/user/profile-events', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ eventId, hidden: !isCurrentlyHidden }),
+            });
+            if (res.ok) {
+                setHiddenEventIds(prev =>
+                    isCurrentlyHidden
+                        ? prev.filter(id => id !== eventId)
+                        : [...prev, eventId]
+                );
+            }
+        } catch (e) {
+            console.error('Erreur toggle event:', e);
+        }
+    };
 
     const toggleBadgeVisibility = async (badgeId: string, currentVisible: boolean) => {
         try {
@@ -303,6 +330,41 @@ export default function PublicProfilePage() {
                             </div>
                         )}
 
+                        {/* Badges milestone de participation */}
+                        {(() => {
+                            const attendeeCount = badges.filter(b => b.role === 'attendee').length;
+                            const isAdmin = isOwnProfile && (currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN');
+                            const milestones = [
+                                { threshold: 10, label: '10 soirées', emoji: '🏆', bg: 'from-yellow-400 to-amber-500', ring: 'ring-yellow-400', text: 'text-yellow-900', bgCard: 'bg-gradient-to-r from-yellow-50 to-amber-50', border: 'border-yellow-200' },
+                                { threshold: 50, label: '50 soirées', emoji: '💎', bg: 'from-slate-300 to-slate-500', ring: 'ring-slate-400', text: 'text-slate-800', bgCard: 'bg-gradient-to-r from-slate-50 to-gray-100', border: 'border-slate-300' },
+                                { threshold: 100, label: '100 soirées', emoji: '🌈', bg: 'from-pink-500 via-purple-500 to-cyan-500', ring: 'ring-purple-400', text: 'text-purple-900', bgCard: 'bg-gradient-to-r from-pink-50 via-purple-50 to-cyan-50', border: 'border-purple-200' },
+                            ];
+                            const earned = isAdmin ? milestones : milestones.filter(m => attendeeCount >= m.threshold);
+                            if (earned.length === 0) return null;
+                            return (
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+                                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                        <Award className="h-4 w-4" />
+                                        Badges de certifications
+                                    </h3>
+                                    <div className="flex flex-wrap gap-3">
+                                        {earned.map((m) => (
+                                            <div
+                                                key={m.threshold}
+                                                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border ${m.bgCard} ${m.border} shadow-sm`}
+                                            >
+                                                <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${m.bg} flex items-center justify-center ring-2 ${m.ring} shadow-md`}>
+                                                    <span className="text-base">{m.emoji}</span>
+                                                </div>
+                                                <span className={`text-sm font-bold ${m.text}`}>{m.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-3">{attendeeCount} soirée{attendeeCount > 1 ? 's' : ''} participée{attendeeCount > 1 ? 's' : ''}</p>
+                                </div>
+                            );
+                        })()}
+
                         {/* Badges de soirées */}
                         {badges.length > 0 && (
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
@@ -323,14 +385,14 @@ export default function PublicProfilePage() {
                                                         src={badge.eventImage}
                                                         alt={badge.eventTitle}
                                                         className={`w-12 h-12 rounded-full object-cover ring-2 shadow-sm transition-transform group-hover:scale-110 ${badge.role === 'organizer'
-                                                                ? 'ring-purple-400'
-                                                                : 'ring-sky-300'
+                                                            ? 'ring-purple-400'
+                                                            : 'ring-sky-300'
                                                             }`}
                                                     />
                                                 ) : (
                                                     <div className={`w-12 h-12 rounded-full flex items-center justify-center ring-2 shadow-sm transition-transform group-hover:scale-110 ${badge.role === 'organizer'
-                                                            ? 'bg-gradient-to-br from-purple-400 to-indigo-500 ring-purple-400'
-                                                            : 'bg-gradient-to-br from-sky-400 to-blue-500 ring-sky-300'
+                                                        ? 'bg-gradient-to-br from-purple-400 to-indigo-500 ring-purple-400'
+                                                        : 'bg-gradient-to-br from-sky-400 to-blue-500 ring-sky-300'
                                                         }`}>
                                                         <Calendar className="h-5 w-5 text-white" />
                                                     </div>
@@ -374,6 +436,25 @@ export default function PublicProfilePage() {
                             </div>
                         )}
 
+                        {/* Vidéo de présentation */}
+                        {profile.profileVideo && (
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-6">
+                                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                    Présentation
+                                </h3>
+                                <div className="rounded-xl overflow-hidden bg-black aspect-video">
+                                    <video
+                                        src={profile.profileVideo}
+                                        controls
+                                        className="w-full h-full object-contain"
+                                        preload="metadata"
+                                        playsInline
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         {/* Events organized */}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="p-5 sm:p-6 border-b border-gray-100">
@@ -394,59 +475,81 @@ export default function PublicProfilePage() {
                                 <div className="divide-y divide-gray-50">
                                     {events.map((event) => {
                                         const isPast = new Date(event.date) < new Date();
+                                        const isHidden = hiddenEventIds.includes(event.id);
                                         return (
-                                            <Link
-                                                key={event.id}
-                                                href={`/events/${event.id}`}
-                                                className="flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-4 hover:bg-sky-50/50 transition-all group"
-                                            >
-                                                {event.imageUrl ? (
-                                                    <img
-                                                        src={event.imageUrl}
-                                                        alt={event.title}
-                                                        className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-xl shadow-sm shrink-0"
-                                                    />
-                                                ) : (
-                                                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-sky-100 to-blue-100 rounded-xl flex items-center justify-center shadow-sm shrink-0">
-                                                        <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-sky-500" />
-                                                    </div>
+                                            <div key={event.id} className={`flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-4 transition-all group ${isHidden && isOwnProfile ? 'opacity-40' : ''}`}>
+                                                {isOwnProfile && (
+                                                    <button
+                                                        onClick={() => toggleEventVisibility(event.id)}
+                                                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all border ${isHidden
+                                                            ? 'bg-gray-100 border-gray-200 text-gray-400 hover:bg-gray-200'
+                                                            : 'bg-sky-50 border-sky-200 text-sky-500 hover:bg-sky-100'
+                                                            }`}
+                                                        title={isHidden ? 'Afficher sur mon profil' : 'Masquer de mon profil'}
+                                                    >
+                                                        {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                                    </button>
                                                 )}
+                                                <Link
+                                                    href={`/events/${event.id}`}
+                                                    className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 hover:bg-sky-50/50 -my-4 py-4 -mr-5 sm:-mr-6 pr-5 sm:pr-6 rounded-r-xl transition-all"
+                                                >
+                                                    {event.imageUrl ? (
+                                                        <img
+                                                            src={event.imageUrl}
+                                                            alt={event.title}
+                                                            className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-xl shadow-sm shrink-0"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-sky-100 to-blue-100 rounded-xl flex items-center justify-center shadow-sm shrink-0">
+                                                            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-sky-500" />
+                                                        </div>
+                                                    )}
 
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                                        <h4 className="font-bold text-gray-900 truncate group-hover:text-sky-600 transition-colors text-sm sm:text-base">
-                                                            {event.title}
-                                                        </h4>
-                                                        {isPast && (
-                                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs font-medium shrink-0">
-                                                                Terminé
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                            <h4 className="font-bold text-gray-900 truncate group-hover:text-sky-600 transition-colors text-sm sm:text-base">
+                                                                {event.title}
+                                                            </h4>
+                                                            {isPast && (
+                                                                <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs font-medium shrink-0">
+                                                                    Terminé
+                                                                </span>
+                                                            )}
+                                                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold shrink-0 ${event.type === 'free' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                                                                }`}>
+                                                                {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
                                                             </span>
-                                                        )}
-                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold shrink-0 ${event.type === 'free' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
-                                                            }`}>
-                                                            {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
-                                                        </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500">
+                                                            <span className="flex items-center gap-1">
+                                                                <Calendar className="h-3 w-3" />
+                                                                {new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                            </span>
+                                                            <span className="flex items-center gap-1">
+                                                                <MapPin className="h-3 w-3" />
+                                                                <span className="truncate max-w-[120px]">{event.location}</span>
+                                                            </span>
+                                                            <span className="hidden sm:flex items-center gap-1">
+                                                                <Users className="h-3 w-3" />
+                                                                {event.currentAttendees}{event.maxAttendees ? `/${event.maxAttendees}` : ''}
+                                                            </span>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-500">
-                                                        <span className="flex items-center gap-1">
-                                                            <Calendar className="h-3 w-3" />
-                                                            {new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                                        </span>
-                                                        <span className="flex items-center gap-1">
-                                                            <MapPin className="h-3 w-3" />
-                                                            <span className="truncate max-w-[120px]">{event.location}</span>
-                                                        </span>
-                                                        <span className="hidden sm:flex items-center gap-1">
-                                                            <Users className="h-3 w-3" />
-                                                            {event.currentAttendees}{event.maxAttendees ? `/${event.maxAttendees}` : ''}
-                                                        </span>
-                                                    </div>
-                                                </div>
 
-                                                <ChevronRight className="h-5 w-5 text-gray-300 group-hover:text-sky-500 transition-colors shrink-0 hidden sm:block" />
-                                            </Link>
+                                                    <ChevronRight className="h-5 w-5 text-gray-300 group-hover:text-sky-500 transition-colors shrink-0 hidden sm:block" />
+                                                </Link>
+                                            </div>
                                         );
                                     })}
+                                </div>
+                            )}
+                            {isOwnProfile && events.length > 0 && (
+                                <div className="px-5 sm:px-6 py-3 bg-gray-50 border-t border-gray-100">
+                                    <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                                        <Eye className="h-3 w-3" />
+                                        Cliquez sur l&apos;icône œil pour masquer/afficher un événement sur votre profil public.
+                                    </p>
                                 </div>
                             )}
                         </div>

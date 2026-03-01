@@ -1,14 +1,21 @@
 'use client';
 
 import Link from 'next/link'
-import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight } from 'lucide-react'
+import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight, X, Share2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export default function Home() {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallButton, setShowInstallButton] = useState(false);
+    const [showInstallGuide, setShowInstallGuide] = useState(false);
+    const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
 
     useEffect(() => {
+        const ua = navigator.userAgent || '';
+        const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        const isAndroid = /Android/.test(ua);
+        setPlatform(isIOS ? 'ios' : isAndroid ? 'android' : 'desktop');
+
         const handler = (e: Event) => {
             e.preventDefault();
             setDeferredPrompt(e);
@@ -17,7 +24,8 @@ export default function Home() {
 
         window.addEventListener('beforeinstallprompt', handler);
 
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+            || (window.navigator as any).standalone === true;
         if (isStandalone) {
             setShowInstallButton(false);
         } else {
@@ -28,11 +36,14 @@ export default function Home() {
     }, []);
 
     const handleInstallClick = async () => {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') setShowInstallButton(false);
-        setDeferredPrompt(null);
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') setShowInstallButton(false);
+            setDeferredPrompt(null);
+        } else {
+            setShowInstallGuide(true);
+        }
     };
 
     return (
@@ -225,6 +236,97 @@ export default function Home() {
                                 Installer
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Guide d'installation mobile */}
+            {showInstallGuide && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowInstallGuide(false)}>
+                    <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md p-6 sm:p-8 relative" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setShowInstallGuide(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <X className="h-6 w-6" />
+                        </button>
+                        <div className="text-center mb-6">
+                            <div className="bg-gradient-to-br from-violet-500 to-purple-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                                <Smartphone className="h-8 w-8 text-white" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">Installer TAFF Events</h3>
+                            <p className="text-sm text-gray-500 mt-1">Ajoutez l'app sur votre écran d'accueil</p>
+                        </div>
+
+                        {platform === 'ios' ? (
+                            <div className="space-y-4">
+                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                    <div className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">1</div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900">Appuyez sur le bouton Partager</p>
+                                        <p className="text-sm text-gray-500 mt-0.5">L'icône <Share2 className="inline h-4 w-4" /> en bas de Safari</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                    <div className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">2</div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900">Défilez et appuyez sur</p>
+                                        <p className="text-sm text-gray-500 mt-0.5">« Sur l'écran d'accueil »</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                    <div className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">3</div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900">Appuyez sur Ajouter</p>
+                                        <p className="text-sm text-gray-500 mt-0.5">L'app apparaîtra sur votre écran d'accueil</p>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-center text-amber-600 bg-amber-50 p-3 rounded-xl font-medium">Safari uniquement — cette fonctionnalité n'est pas disponible sur Chrome iOS</p>
+                            </div>
+                        ) : platform === 'android' ? (
+                            <div className="space-y-4">
+                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                    <div className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">1</div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900">Ouvrez le menu Chrome</p>
+                                        <p className="text-sm text-gray-500 mt-0.5">Appuyez sur ⋮ (3 points) en haut à droite</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                    <div className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">2</div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900">Appuyez sur</p>
+                                        <p className="text-sm text-gray-500 mt-0.5">« Installer l'application » ou « Ajouter à l'écran d'accueil »</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                    <div className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">3</div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900">Confirmez l'installation</p>
+                                        <p className="text-sm text-gray-500 mt-0.5">L'app s'installera comme une application native</p>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-center text-sky-600 bg-sky-50 p-3 rounded-xl font-medium">Fonctionne avec Chrome, Edge et Samsung Internet</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                    <div className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">1</div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900">Cliquez sur l'icône d'installation</p>
+                                        <p className="text-sm text-gray-500 mt-0.5">Dans la barre d'adresse de Chrome</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
+                                    <div className="bg-sky-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0">2</div>
+                                    <div>
+                                        <p className="font-semibold text-gray-900">Confirmez l'installation</p>
+                                        <p className="text-sm text-gray-500 mt-0.5">L'app s'ouvrira dans sa propre fenêtre</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <button onClick={() => setShowInstallGuide(false)} className="w-full mt-6 bg-gradient-to-r from-violet-600 to-purple-600 text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-all">
+                            Compris !
+                        </button>
                     </div>
                 </div>
             )}
