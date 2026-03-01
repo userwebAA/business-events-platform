@@ -2,10 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 import bcrypt from 'bcrypt';
+import { applyRateLimit } from '@/lib/rate-limiter';
 
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '10');
 
 export async function PUT(request: NextRequest) {
+    // Rate limiting: 3 req / 15 min
+    const rateLimited = applyRateLimit(request, 'change-password', 3, 900000);
+    if (rateLimited) return rateLimited;
+
     try {
         const token = request.headers.get('authorization')?.replace('Bearer ', '');
         if (!token) {

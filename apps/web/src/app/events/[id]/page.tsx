@@ -40,40 +40,54 @@ export default function EventDetailPage() {
                         endDate: data.endDate ? new Date(data.endDate) : undefined
                     });
 
-                    // Vérifier si l'utilisateur est inscrit
-                    const registeredIds = JSON.parse(sessionStorage.getItem('registeredEvents') || '[]');
-                    const isUserRegistered = registeredIds.includes(params.id);
-                    setIsRegistered(isUserRegistered);
+                    // Vérifier si l'utilisateur est inscrit (DB puis sessionStorage)
+                    let isUserRegistered = false;
+                    let foundRegId: string | null = null;
 
-                    // Récupérer le registrationId pour la facture
-                    const storedRegId = sessionStorage.getItem(`registration_${params.id}`);
-                    if (storedRegId) {
-                        setRegistrationId(storedRegId);
+                    const token = localStorage.getItem('token');
+                    if (token) {
+                        try {
+                            const regRes = await fetch('/api/user/registrations', {
+                                headers: { 'Authorization': `Bearer ${token}` },
+                            });
+                            if (regRes.ok) {
+                                const registrations = await regRes.json();
+                                const match = registrations.find((r: any) => r.eventId === params.id);
+                                if (match) {
+                                    isUserRegistered = true;
+                                    foundRegId = match.id;
+                                }
+                            }
+                        } catch { }
                     }
 
-                    // Si inscrit et événement payant, récupérer l'adresse
-                    if (isUserRegistered && data.type === 'paid') {
-                        const registrationId = sessionStorage.getItem(`registration_${params.id}`);
-                        if (registrationId) {
-                            setLoadingAddress(true);
-                            try {
-                                const addressResponse = await fetch(`/api/events/${params.id}/address`, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({ registrationId }),
-                                });
+                    // Fallback sessionStorage
+                    if (!isUserRegistered) {
+                        const registeredIds = JSON.parse(sessionStorage.getItem('registeredEvents') || '[]');
+                        isUserRegistered = registeredIds.includes(params.id);
+                        foundRegId = sessionStorage.getItem(`registration_${params.id}`);
+                    }
 
-                                if (addressResponse.ok) {
-                                    const addressData = await addressResponse.json();
-                                    setFullAddress(addressData.address);
-                                }
-                            } catch (error) {
-                                console.error('Error fetching address:', error);
-                            } finally {
-                                setLoadingAddress(false);
+                    setIsRegistered(isUserRegistered);
+                    if (foundRegId) setRegistrationId(foundRegId);
+
+                    // Si inscrit et événement payant, récupérer l'adresse
+                    if (isUserRegistered && data.type === 'paid' && foundRegId) {
+                        setLoadingAddress(true);
+                        try {
+                            const addressResponse = await fetch(`/api/events/${params.id}/address`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ registrationId: foundRegId }),
+                            });
+                            if (addressResponse.ok) {
+                                const addressData = await addressResponse.json();
+                                setFullAddress(addressData.address);
                             }
+                        } catch (error) {
+                            console.error('Error fetching address:', error);
+                        } finally {
+                            setLoadingAddress(false);
                         }
                     }
                 }
@@ -88,14 +102,35 @@ export default function EventDetailPage() {
     }, [params.id]);
 
     const handleShare = useCallback(async () => {
+        const url = window.location.href;
         try {
-            await navigator.clipboard.writeText(window.location.href);
+            // Mobile : utiliser l'API Web Share si disponible
+            if (navigator.share) {
+                await navigator.share({ title: event?.title || 'Événement', url });
+                return;
+            }
+            // Desktop HTTPS : clipboard API
+            if (navigator.clipboard) {
+                await navigator.clipboard.writeText(url);
+                setShared(true);
+                setTimeout(() => setShared(false), 2000);
+                return;
+            }
+        } catch { }
+        // Fallback HTTP : copie via textarea caché
+        try {
+            const textarea = document.createElement('textarea');
+            textarea.value = url;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
             setShared(true);
             setTimeout(() => setShared(false), 2000);
-        } catch {
-            // fallback
-        }
-    }, []);
+        } catch { }
+    }, [event]);
 
     const spotsLeft = useMemo(() => event?.maxAttendees ? event.maxAttendees - event.currentAttendees : null, [event]);
     const isFull = useMemo(() => spotsLeft !== null && spotsLeft <= 0, [spotsLeft]);

@@ -3,49 +3,54 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { transporter } from '@/lib/email';
 import crypto from 'crypto';
+import { applyRateLimit } from '@/lib/rate-limiter';
 
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '10');
 
 function generateTemporaryPassword(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-    const specialChars = '!@#$%&*';
-    let password = '';
-    for (let i = 0; i < 10; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    password += specialChars.charAt(Math.floor(Math.random() * specialChars.length));
-    // Shuffle
-    return password.split('').sort(() => Math.random() - 0.5).join('');
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const specialChars = '!@#$%&*';
+  let password = '';
+  for (let i = 0; i < 10; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  password += specialChars.charAt(Math.floor(Math.random() * specialChars.length));
+  // Shuffle
+  return password.split('').sort(() => Math.random() - 0.5).join('');
 }
 
 export async function POST(request: NextRequest) {
-    try {
-        const { email } = await request.json();
+  // Rate limiting: 3 req / 15 min
+  const rateLimited = applyRateLimit(request, 'forgot-password', 3, 900000);
+  if (rateLimited) return rateLimited;
 
-        if (!email) {
-            return NextResponse.json({ error: 'Email requis' }, { status: 400 });
-        }
+  try {
+    const { email } = await request.json();
 
-        const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!email) {
+      return NextResponse.json({ error: 'Email requis' }, { status: 400 });
+    }
 
-        // Always return success to prevent email enumeration
-        if (!user) {
-            return NextResponse.json({ message: 'Si un compte existe avec cet email, un nouveau mot de passe a été envoyé.' });
-        }
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
 
-        const tempPassword = generateTemporaryPassword();
-        const hashedPassword = await bcrypt.hash(tempPassword, BCRYPT_ROUNDS);
+    // Always return success to prevent email enumeration
+    if (!user) {
+      return NextResponse.json({ message: 'Si un compte existe avec cet email, un nouveau mot de passe a été envoyé.' });
+    }
 
-        await prisma.user.update({
-            where: { id: user.id },
-            data: { password: hashedPassword },
-        });
+    const tempPassword = generateTemporaryPassword();
+    const hashedPassword = await bcrypt.hash(tempPassword, BCRYPT_ROUNDS);
 
-        await transporter.sendMail({
-            from: `"TAFF Events - No Reply" <${process.env.SMTP_USER}>`,
-            to: user.email,
-            subject: '🔐 Réinitialisation de votre mot de passe - TAFF Events',
-            html: `
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    await transporter.sendMail({
+      from: `"TAFF Events - No Reply" <${process.env.SMTP_USER}>`,
+      to: user.email,
+      subject: '🔐 Réinitialisation de votre mot de passe - TAFF Events',
+      html: `
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -104,14 +109,14 @@ export async function POST(request: NextRequest) {
 </body>
 </html>
             `,
-            text: `Bonjour ${user.name || 'Utilisateur'},\n\nVotre nouveau mot de passe temporaire est : ${tempPassword}\n\nVeuillez le modifier dès votre prochaine connexion dans Paramètres → Sécurité.\n\nL'équipe TAFF Events`,
-        });
+      text: `Bonjour ${user.name || 'Utilisateur'},\n\nVotre nouveau mot de passe temporaire est : ${tempPassword}\n\nVeuillez le modifier dès votre prochaine connexion dans Paramètres → Sécurité.\n\nL'équipe TAFF Events`,
+    });
 
-        console.log('✅ Email mot de passe temporaire envoyé à:', user.email);
+    console.log('✅ Email mot de passe temporaire envoyé à:', user.email);
 
-        return NextResponse.json({ message: 'Si un compte existe avec cet email, un nouveau mot de passe a été envoyé.' });
-    } catch (error) {
-        console.error('❌ Erreur réinitialisation mot de passe:', error);
-        return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
-    }
+    return NextResponse.json({ message: 'Si un compte existe avec cet email, un nouveau mot de passe a été envoyé.' });
+  } catch (error) {
+    console.error('❌ Erreur réinitialisation mot de passe:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
 }

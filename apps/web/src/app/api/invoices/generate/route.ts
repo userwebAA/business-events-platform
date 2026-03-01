@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateInvoiceHTML, generateInvoiceNumber } from '@/lib/invoiceGenerator';
+import { applyRateLimit } from '@/lib/rate-limiter';
 
 export async function POST(request: NextRequest) {
+  // Rate limiting: 5 req / 5 min
+  const rateLimited = applyRateLimit(request, 'invoice', 5, 300000);
+  if (rateLimited) return rateLimited;
+
   try {
     const body = await request.json();
     const {

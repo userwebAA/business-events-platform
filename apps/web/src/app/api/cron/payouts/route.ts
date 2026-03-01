@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 
-// POST: Traiter les payouts éligibles (paiements > 7 jours)
-// Ce cron doit être appelé régulièrement (ex: toutes les heures via Vercel Cron ou un service externe)
-export async function POST(request: NextRequest) {
+const CRON_SECRET = process.env.CRON_SECRET || '';
+
+// GET: Traiter les payouts éligibles (paiements > 7 jours)
+// Appelé automatiquement par Vercel Cron tous les jours à 6h
+export async function GET(request: NextRequest) {
     try {
+        // Vérifier l'autorisation
+        const authHeader = request.headers.get('authorization');
+        if (CRON_SECRET && authHeader !== `Bearer ${CRON_SECRET}`) {
+            return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+        }
+
         const now = new Date();
 
         // Trouver tous les paiements éligibles au payout (date dépassée, pas encore payés)
@@ -119,8 +127,8 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// GET: Voir les payouts en attente (pour les admins)
-export async function GET(request: NextRequest) {
+// POST: Voir les payouts en attente (pour les admins)
+export async function POST(request: NextRequest) {
     try {
         const now = new Date();
 

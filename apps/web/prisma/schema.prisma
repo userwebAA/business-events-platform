@@ -53,6 +53,7 @@ model RegistrationField {
 model Registration {
   id        String   @id @default(cuid())
   eventId   String
+  userId    String?
   formData  Json
   createdAt DateTime @default(now())
   
@@ -60,6 +61,7 @@ model Registration {
   ticket    Ticket?
   
   @@index([eventId])
+  @@index([userId])
 }
 
 enum TicketStatus {

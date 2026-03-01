@@ -2,9 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { stripe, calculatePlatformFee } from '@/lib/stripe';
 import { requireAuth } from '@/lib/auth-middleware';
+import { applyRateLimit } from '@/lib/rate-limiter';
 
 // POST: Créer une session Stripe Checkout pour un événement payant
 export async function POST(request: NextRequest) {
+    // Rate limiting: 5 req / 5 min
+    const rateLimited = applyRateLimit(request, 'checkout', 5, 300000);
+    if (rateLimited) return rateLimited;
+
     try {
         const authResult = await requireAuth(request);
         if (authResult.error) return authResult.error;

@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 import bcrypt from 'bcrypt';
+import { applyRateLimit } from '@/lib/rate-limiter';
 
 export async function DELETE(request: NextRequest) {
+    // Rate limiting: 2 req / 15 min
+    const rateLimited = applyRateLimit(request, 'delete-account', 2, 900000);
+    if (rateLimited) return rateLimited;
+
     try {
         const token = request.headers.get('authorization')?.replace('Bearer ', '');
         if (!token) {

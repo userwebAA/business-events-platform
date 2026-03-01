@@ -15,9 +15,33 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-    title: 'Business Events - Plateforme de Soirées Business',
-    description: 'Organisez et participez à des événements business professionnels',
+    title: {
+        default: 'Business Events - Plateforme de Soirées Business',
+        template: '%s | Business Events',
+    },
+    description: 'Organisez et participez à des événements business professionnels. Créez, gérez et monétisez vos soirées networking.',
+    keywords: ['événements business', 'soirées networking', 'événements professionnels', 'inscription événement', 'billetterie'],
+    authors: [{ name: 'Business Events' }],
     manifest: '/manifest.json',
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://business-events.fr'),
+    openGraph: {
+        type: 'website',
+        locale: 'fr_FR',
+        siteName: 'Business Events',
+        title: 'Business Events - Plateforme de Soirées Business',
+        description: 'Organisez et participez à des événements business professionnels. Créez, gérez et monétisez vos soirées networking.',
+        images: [{ url: '/icons/icon-512x512.png', width: 512, height: 512, alt: 'Business Events' }],
+    },
+    twitter: {
+        card: 'summary',
+        title: 'Business Events - Plateforme de Soirées Business',
+        description: 'Organisez et participez à des événements business professionnels.',
+        images: ['/icons/icon-512x512.png'],
+    },
+    robots: {
+        index: true,
+        follow: true,
+    },
     appleWebApp: {
         capable: true,
         statusBarStyle: 'default',

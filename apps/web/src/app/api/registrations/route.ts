@@ -4,18 +4,35 @@ import { sendConfirmationEmailWithTicket, sendNewRegistrationEmail } from '@/lib
 import { generateTicket } from '@/lib/ticketService';
 import { generateTicketPDF } from '@/lib/pdfTicketGenerator';
 import { verifyToken } from '@/lib/jwt';
+import { applyRateLimit } from '@/lib/rate-limiter';
 
 export async function POST(request: NextRequest) {
+    // Rate limiting: 10 req / 5 min
+    const rateLimited = applyRateLimit(request, 'registration', 10, 300000);
+    if (rateLimited) return rateLimited;
+
     try {
         console.log('🔵 Début de la requête d\'inscription');
         const body = await request.json();
         console.log('📦 Body reçu:', JSON.stringify(body, null, 2));
+
+        // Extraire le userId si connecté
+        let userId: string | null = null;
+        try {
+            const authHeader = request.headers.get('authorization');
+            if (authHeader) {
+                const token = authHeader.replace('Bearer ', '');
+                const decoded = verifyToken(token);
+                if (decoded) userId = decoded.userId;
+            }
+        } catch { }
 
         console.log('🔵 Création de l\'inscription dans Prisma...');
         const registration = await prisma.registration.create({
             data: {
                 eventId: body.eventId,
                 formData: body.formData,
+                ...(userId && { userId }),
             },
             include: {
                 event: true,

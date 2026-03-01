@@ -102,6 +102,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         data: {
             eventId,
             formData,
+            userId,
         },
         include: { event: true },
     });

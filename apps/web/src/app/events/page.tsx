@@ -43,13 +43,30 @@ export default function EventsPage() {
 
     const fetchRegisteredEvents = useCallback(async () => {
         try {
+            const now = new Date();
+            // Priorité : charger depuis la DB si connecté
+            const token = localStorage.getItem('token');
+            if (token) {
+                const res = await fetch('/api/user/registrations', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (res.ok) {
+                    const registrations = await res.json();
+                    setRegisteredEvents(
+                        registrations
+                            .map((r: any) => ({ ...r.event, date: new Date(r.event.date), registrationId: r.id }))
+                            .filter((e: Event) => new Date(e.date) > now)
+                    );
+                    return;
+                }
+            }
+            // Fallback : sessionStorage
             const registeredIds = JSON.parse(sessionStorage.getItem('registeredEvents') || '[]');
             if (registeredIds.length > 0) {
                 const eventsPromises = registeredIds.map((id: string) =>
                     fetch(`/api/events/${id}`).then(res => res.ok ? res.json() : null)
                 );
                 const eventsData = (await Promise.all(eventsPromises)).filter(Boolean);
-                const now = new Date();
                 setRegisteredEvents(
                     eventsData
                         .map((e: any) => ({ ...e, date: new Date(e.date) }))

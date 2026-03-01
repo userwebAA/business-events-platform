@@ -35,6 +35,24 @@ export default function DashboardPage() {
 
     const fetchRegisteredEvents = useCallback(async () => {
         try {
+            // Priorité : charger depuis la DB si connecté
+            const token = localStorage.getItem('token');
+            if (token) {
+                const res = await fetch('/api/user/registrations', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (res.ok) {
+                    const registrations = await res.json();
+                    const eventsData = registrations.map((r: any) => ({
+                        ...r.event,
+                        date: new Date(r.event.date),
+                        registrationId: r.id,
+                    }));
+                    setRegisteredEvents(eventsData);
+                    return;
+                }
+            }
+            // Fallback : sessionStorage pour les non-connectés
             const registeredIds = JSON.parse(sessionStorage.getItem('registeredEvents') || '[]');
             if (registeredIds.length > 0) {
                 const eventsPromises = registeredIds.map((id: string) =>
