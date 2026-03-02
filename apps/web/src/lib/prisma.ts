@@ -6,11 +6,9 @@ const globalForPrisma = globalThis as unknown as {
 
 function createPrismaClient(): PrismaClient {
   // En production (Vercel + Neon) : utiliser le driver serverless Neon
-  if (process.env.NODE_ENV === 'production' || process.env.USE_NEON === 'true') {
-    const { neonConfig, Pool: NeonPool } = require('@neondatabase/serverless');
+  if (process.env.NODE_ENV === 'production') {
+    const { Pool: NeonPool } = require('@neondatabase/serverless');
     const { PrismaNeon } = require('@prisma/adapter-neon');
-    const ws = require('ws');
-    neonConfig.webSocketConstructor = ws;
     const pool = new NeonPool({ connectionString: process.env.DATABASE_URL });
     const adapter = new PrismaNeon(pool);
     return new PrismaClient({ adapter, log: ['error', 'warn'] });
