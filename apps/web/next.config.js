@@ -16,7 +16,6 @@ const withPWA = (isDev && !enablePWAinDev)
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -29,9 +28,6 @@ const nextConfig = {
     },
   },
   reactStrictMode: true,
-  generateBuildId: async () => {
-    return 'build-' + Date.now()
-  },
   transpilePackages: ['shared'],
   images: {
     domains: ['images.unsplash.com', 'localhost'],

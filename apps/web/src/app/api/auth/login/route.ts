@@ -7,6 +7,9 @@ import { checkRateLimit } from '@/lib/rate-limiter';
 import { securityLogger, SecurityEventType } from '@/lib/security-logger';
 import { getClientIp } from '@/lib/auth-middleware';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
     const ip = getClientIp(request);
     const userAgent = request.headers.get('user-agent') || undefined;

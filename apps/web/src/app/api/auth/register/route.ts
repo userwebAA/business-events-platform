@@ -7,6 +7,9 @@ import { checkRateLimit } from '@/lib/rate-limiter';
 import { securityLogger, SecurityEventType } from '@/lib/security-logger';
 import { getClientIp } from '@/lib/auth-middleware';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '10');
 
 export async function POST(request: NextRequest) {
