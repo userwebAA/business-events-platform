@@ -1,3 +1,22 @@
+import { NextResponse } from 'next/server';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+export async function POST(request: Request) {
+    try {
+        const body = await request.json();
+        return NextResponse.json({
+            success: true,
+            message: 'LOGIN TEST OK',
+            received: body
+        });
+    } catch (error) {
+        return NextResponse.json({ error: 'Test failed' }, { status: 500 });
+    }
+}
+
+/* ORIGINAL CODE - RESTORE AFTER TEST
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
@@ -123,13 +142,14 @@ export async function POST(request: NextRequest) {
             },
             token,
         });
-    } catch (error) {
-        console.error('Login error:', error);
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
         securityLogger.log({
             eventType: SecurityEventType.LOGIN_FAILED,
+            email: 'unknown',
             ip,
             userAgent,
-            details: `Server error: ${error instanceof Error ? error.message : 'Unknown'}`,
+            details: errorMessage,
         });
 
         return NextResponse.json(
@@ -138,3 +158,4 @@ export async function POST(request: NextRequest) {
         );
     }
 }
+*/
