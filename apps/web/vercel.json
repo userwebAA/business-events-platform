@@ -1,7 +1,5 @@
 {
   "buildCommand": "cd ../.. && npm run build:web",
-  "outputDirectory": ".next",
-  "framework": "nextjs",
   "regions": ["cdg1"],
   "crons": [
     {
