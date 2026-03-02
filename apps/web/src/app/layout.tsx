@@ -4,9 +4,6 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 import CookieBanner from '@/components/CookieBanner'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
-
 const inter = Inter({ subsets: ['latin'] })
 
 export const viewport: Viewport = {
