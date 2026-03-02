@@ -7,9 +7,16 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  // Use Neon adapter with DATABASE_URL from environment (updated 2026-03-02)
+  const dbUrl = process.env.DATABASE_URL;
+  console.log('[Prisma] DATABASE_URL exists:', !!dbUrl);
+  console.log('[Prisma] DATABASE_URL starts with:', dbUrl?.substring(0, 30));
+
+  if (!dbUrl) {
+    throw new Error('[Prisma] DATABASE_URL is not set! Check Vercel environment variables.');
+  }
+
   neonConfig.fetchConnectionCache = true;
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({ connectionString: dbUrl });
   const adapter = new PrismaNeon(pool as any);
   return new PrismaClient({ adapter, log: ['error', 'warn'] });
 }
