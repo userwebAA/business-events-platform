@@ -1,6 +1,14 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  console.error('❌ DATABASE_URL manquante');
+  process.exit(1);
+}
+
+console.log('🔗 Connexion à la base de données...');
 const prisma = new PrismaClient();
 
 async function createAdmin() {
@@ -33,7 +41,7 @@ async function createAdmin() {
     console.log('📧 Email:', user.email);
     console.log('👤 Nom:', user.name);
     console.log('🔑 Rôle:', user.role);
-    
+
     await prisma.$disconnect();
   } catch (error) {
     console.error('❌ Erreur lors de la création:', error);
