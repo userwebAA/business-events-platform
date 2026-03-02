@@ -7,7 +7,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  // Use Neon adapter with DATABASE_URL from environment
+  // Use Neon adapter with DATABASE_URL from environment (updated 2026-03-02)
   neonConfig.fetchConnectionCache = true;
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const adapter = new PrismaNeon(pool as any);
