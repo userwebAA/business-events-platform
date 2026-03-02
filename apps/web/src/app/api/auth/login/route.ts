@@ -1,22 +1,3 @@
-import { NextResponse } from 'next/server';
-
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-
-export async function POST(request: Request) {
-    try {
-        const body = await request.json();
-        return NextResponse.json({
-            success: true,
-            message: 'LOGIN TEST OK',
-            received: body
-        });
-    } catch (error) {
-        return NextResponse.json({ error: 'Test failed' }, { status: 500 });
-    }
-}
-
-/* ORIGINAL CODE - RESTORE AFTER TEST
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
@@ -158,4 +139,3 @@ export async function POST(request: NextRequest) {
         );
     }
 }
-*/
