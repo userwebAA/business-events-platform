@@ -245,6 +245,50 @@ export default function DashboardPage() {
                     </Link>
                 </div>
 
+                {/* Section Admin */}
+                {isAdmin && (
+                    <div className="mb-10">
+                        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <Shield className="h-5 w-5 text-sky-500" />
+                            Administration
+                        </h2>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                            <Link
+                                href="/dashboard/admin/identity"
+                                className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-sky-200 transition-shadow duration-200 hover:-translate-y-1"
+                            >
+                                <div className="bg-gradient-to-br from-sky-400 to-cyan-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                    <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                </div>
+                                <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">Vérification ID</h3>
+                                <p className="text-xs text-gray-500 hidden sm:block">Valider les identités</p>
+                            </Link>
+
+                            <Link
+                                href="/dashboard/admin/users"
+                                className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-indigo-200 transition-shadow duration-200 hover:-translate-y-1"
+                            >
+                                <div className="bg-gradient-to-br from-indigo-400 to-purple-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                    <User className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                </div>
+                                <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">Utilisateurs</h3>
+                                <p className="text-xs text-gray-500 hidden sm:block">Gérer les comptes</p>
+                            </Link>
+
+                            <Link
+                                href="/dashboard/admin/treasury"
+                                className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-amber-200 transition-shadow duration-200 hover:-translate-y-1"
+                            >
+                                <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                    <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                </div>
+                                <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">Trésorerie</h3>
+                                <p className="text-xs text-gray-500 hidden sm:block">Mouvements financiers</p>
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
                 {/* Événements récents */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="flex items-center justify-between px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-100">
