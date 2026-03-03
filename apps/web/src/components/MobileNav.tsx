@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, LayoutDashboard, User, Home } from 'lucide-react';
+import { Calendar, LayoutDashboard, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function MobileNav() {
@@ -12,12 +12,6 @@ export default function MobileNav() {
     if (!user) return null;
 
     const navItems = [
-        {
-            href: '/',
-            label: 'Accueil',
-            icon: Home,
-            isActive: pathname === '/',
-        },
         {
             href: '/events',
             label: 'Événements',
@@ -47,11 +41,10 @@ export default function MobileNav() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-all ${
-                                item.isActive
-                                    ? 'text-sky-600'
-                                    : 'text-gray-400 hover:text-gray-600'
-                            }`}
+                            className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-2 rounded-xl transition-all ${item.isActive
+                                ? 'text-sky-600'
+                                : 'text-gray-400 hover:text-gray-600'
+                                }`}
                         >
                             <div className={`relative ${item.isActive ? '' : ''}`}>
                                 {item.isActive && (
