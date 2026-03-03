@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcrypt';
 import { signToken } from '@/lib/jwt';
+import { validateEmail } from '@/lib/validation';
+import { checkRateLimit } from '@/lib/rate-limiter';
+import { securityLogger, SecurityEventType } from '@/lib/security-logger';
+import { getClientIp } from '@/lib/auth-middleware';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
+    const ip = getClientIp(request);
+    const userAgent = request.headers.get('user-agent') || undefined;
+
     try {
         const { email, password } = await request.json();
 
-        // Validation basique
+        // Validation des entrées
         if (!email || !password) {
             return NextResponse.json(
                 { error: 'Email et mot de passe requis' },
@@ -16,30 +25,108 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Test hardcodé pour le compte admin
-        if (email === 'alexalix58@gmail.com' && password === 'Pozerty321') {
-            const token = signToken({
-                userId: '3bf4322f-838f-46a2-a720-afb14829ede9',
-                email: 'alexalix58@gmail.com',
-                role: 'SUPER_ADMIN',
-            });
-
-            return NextResponse.json({
-                user: {
-                    id: '3bf4322f-838f-46a2-a720-afb14829ede9',
-                    email: 'alexalix58@gmail.com',
-                    name: 'Alex Admin',
-                    role: 'SUPER_ADMIN',
-                },
-                token,
-            });
+        // Valider l'email
+        const emailValidation = validateEmail(email);
+        if (!emailValidation.isValid) {
+            return NextResponse.json(
+                { error: emailValidation.errors[0] },
+                { status: 400 }
+            );
         }
 
-        return NextResponse.json(
-            { error: 'Email ou mot de passe incorrect' },
-            { status: 401 }
-        );
+        // Rate limiting par IP
+        const rateLimitResult = checkRateLimit(`login:${ip}`);
+        if (!rateLimitResult.allowed) {
+            securityLogger.log({
+                eventType: SecurityEventType.RATE_LIMIT_EXCEEDED,
+                email,
+                ip,
+                userAgent,
+                details: `Retry after ${rateLimitResult.retryAfter} seconds`,
+            });
+
+            return NextResponse.json(
+                {
+                    error: `Trop de tentatives. Réessayez dans ${rateLimitResult.retryAfter} secondes.`,
+                },
+                {
+                    status: 429,
+                    headers: {
+                        'Retry-After': rateLimitResult.retryAfter?.toString() || '900',
+                    },
+                }
+            );
+        }
+
+        // Trouver l'utilisateur
+        const user = await prisma.user.findUnique({
+            where: { email: email.toLowerCase() },
+        });
+
+        if (!user) {
+            securityLogger.log({
+                eventType: SecurityEventType.LOGIN_FAILED,
+                email,
+                ip,
+                userAgent,
+                details: 'User not found',
+            });
+
+            return NextResponse.json(
+                { error: 'Email ou mot de passe incorrect' },
+                { status: 401 }
+            );
+        }
+
+        // Vérifier le mot de passe
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            securityLogger.log({
+                eventType: SecurityEventType.LOGIN_FAILED,
+                userId: user.id,
+                email,
+                ip,
+                userAgent,
+                details: 'Invalid password',
+            });
+
+            return NextResponse.json(
+                { error: 'Email ou mot de passe incorrect' },
+                { status: 401 }
+            );
+        }
+
+        // Générer le token JWT
+        const token = signToken({
+            userId: user.id,
+            email: user.email,
+            role: user.role,
+        });
+
+        // Log succès
+        securityLogger.log({
+            eventType: SecurityEventType.LOGIN_SUCCESS,
+            userId: user.id,
+            email: user.email,
+            ip,
+            userAgent,
+        });
+
+        // Retourner l'utilisateur et le token (sans le mot de passe)
+        return NextResponse.json({
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            },
+            token,
+        });
     } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+        console.error('Login error:', errorMessage);
+
         return NextResponse.json(
             { error: 'Erreur lors de la connexion' },
             { status: 500 }
