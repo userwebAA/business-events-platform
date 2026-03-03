@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { transporter } from '@/lib/email';
 import crypto from 'crypto';
 import { applyRateLimit } from '@/lib/rate-limiter';

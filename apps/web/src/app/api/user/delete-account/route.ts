@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { applyRateLimit } from '@/lib/rate-limiter';
 
 export async function DELETE(request: NextRequest) {

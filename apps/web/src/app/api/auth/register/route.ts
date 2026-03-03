@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { signToken } from '@/lib/jwt';
 import { validateEmail, validatePassword, validateName, sanitizeInput } from '@/lib/validation';
 import { checkRateLimit } from '@/lib/rate-limiter';
