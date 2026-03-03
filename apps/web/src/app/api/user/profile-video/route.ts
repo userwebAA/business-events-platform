@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+
+const MAX_VIDEO_SIZE = 5 * 1024 * 1024; // 5 Mo max pour stockage en base64
 
 export async function POST(request: NextRequest) {
     try {
@@ -28,26 +28,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Le fichier doit être une vidéo' }, { status: 400 });
         }
 
-        // Limiter à 50MB
-        if (file.size > 50 * 1024 * 1024) {
-            return NextResponse.json({ error: 'La vidéo ne doit pas dépasser 50 Mo' }, { status: 400 });
+        // Limiter à 5MB pour stockage en DB
+        if (file.size > MAX_VIDEO_SIZE) {
+            return NextResponse.json({ error: 'La vidéo ne doit pas dépasser 5 Mo' }, { status: 400 });
         }
 
-        // Créer le dossier d'upload si nécessaire
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'videos');
-        await mkdir(uploadDir, { recursive: true });
-
-        // Générer un nom de fichier unique
-        const ext = file.name.split('.').pop() || 'mp4';
-        const fileName = `${decoded.userId}-${Date.now()}.${ext}`;
-        const filePath = path.join(uploadDir, fileName);
-
-        // Écrire le fichier
+        // Convertir en base64 Data URL
         const bytes = await file.arrayBuffer();
-        await writeFile(filePath, Buffer.from(bytes));
-
-        // URL publique
-        const videoUrl = `/uploads/videos/${fileName}`;
+        const base64 = Buffer.from(bytes).toString('base64');
+        const videoUrl = `data:${file.type};base64,${base64}`;
 
         // Mettre à jour le profil
         await prisma.user.update({
@@ -58,7 +47,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true, videoUrl });
     } catch (error) {
         console.error('❌ Erreur upload vidéo:', error instanceof Error ? error.message : error);
-        console.error('❌ Stack:', error instanceof Error ? error.stack : '');
         return NextResponse.json({ error: 'Erreur serveur: ' + (error instanceof Error ? error.message : 'Unknown') }, { status: 500 });
     }
 }
