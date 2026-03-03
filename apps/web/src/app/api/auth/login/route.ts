@@ -22,19 +22,23 @@ export async function POST(request: NextRequest) {
             where: { email: email.toLowerCase() },
         });
 
+        console.log('[Login] User found:', !!user, 'email searched:', email.toLowerCase());
+
         if (!user) {
             return NextResponse.json(
-                { error: 'Email ou mot de passe incorrect' },
+                { error: 'Email ou mot de passe incorrect', debug: 'user_not_found' },
                 { status: 401 }
             );
         }
 
         // Vérifier le mot de passe
+        console.log('[Login] Password hash starts with:', user.password?.substring(0, 10));
         const isPasswordValid = await bcryptjs.compare(password, user.password);
+        console.log('[Login] Password valid:', isPasswordValid);
 
         if (!isPasswordValid) {
             return NextResponse.json(
-                { error: 'Email ou mot de passe incorrect' },
+                { error: 'Email ou mot de passe incorrect', debug: 'invalid_password' },
                 { status: 401 }
             );
         }
