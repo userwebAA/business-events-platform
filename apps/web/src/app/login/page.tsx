@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { Mail, Lock, LogIn, Calendar, ArrowRight } from 'lucide-react';
@@ -12,6 +12,7 @@ export default function LoginPage() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { login } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -26,7 +27,8 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await login(email, password);
-            router.push('/dashboard');
+            const redirectTo = searchParams.get('redirect') || '/dashboard';
+            router.push(redirectTo);
         } catch (err) {
             setError('Email ou mot de passe incorrect');
         } finally {

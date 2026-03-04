@@ -132,64 +132,6 @@ export default function DashboardPage() {
                 </div>
 
 
-                {/* Cartes de statistiques */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-10 lg:grid-cols-5">
-                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200 group">
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <div className="bg-gradient-to-br from-sky-400 to-blue-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
-                                <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                            </div>
-                            <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 group-hover:text-sky-500 transition-colors" />
-                        </div>
-                        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalEvents}</p>
-                        <p className="text-xs sm:text-sm text-gray-500 mt-1">Total Événements</p>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200 group">
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <div className="bg-gradient-to-br from-emerald-400 to-green-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
-                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                            </div>
-                            <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 group-hover:text-emerald-500 transition-colors" />
-                        </div>
-                        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalRegistrations}</p>
-                        <p className="text-xs sm:text-sm text-gray-500 mt-1">Mes Inscriptions</p>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200 group">
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <div className="bg-gradient-to-br from-purple-400 to-violet-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
-                                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                            </div>
-                            <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 group-hover:text-purple-500 transition-colors" />
-                        </div>
-                        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.upcomingEvents}</p>
-                        <p className="text-xs sm:text-sm text-gray-500 mt-1">À venir</p>
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200 group">
-                        <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <div className="bg-gradient-to-br from-rose-400 to-red-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
-                                <Lock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                            </div>
-                            <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 group-hover:text-rose-500 transition-colors" />
-                        </div>
-                        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.privateEvents}</p>
-                        <p className="text-xs sm:text-sm text-gray-500 mt-1">Événements Privés</p>
-                    </div>
-
-                    <Link href={isAdmin ? '/dashboard/admin/treasury' : '/dashboard/my-revenue'} className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl shadow-lg p-4 sm:p-6 text-white col-span-2 lg:col-span-1 group hover:shadow-xl transition-all cursor-pointer">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="bg-white bg-opacity-20 w-12 h-12 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                                <Euro className="h-6 w-6 text-white" />
-                            </div>
-                            <ArrowUpRight className="h-5 w-5 text-white text-opacity-50 group-hover:text-opacity-100 transition-colors" />
-                        </div>
-                        <p className="text-2xl sm:text-3xl font-bold">{stats.totalRevenue.toFixed(2)}€</p>
-                        <p className="text-sm text-amber-100 mt-1">Recette</p>
-                    </Link>
-                </div>
-
                 {/* Actions rapides */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-10">
                     <Link
@@ -288,6 +230,64 @@ export default function DashboardPage() {
                         </div>
                     </div>
                 )}
+
+                {/* Cartes de statistiques */}
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:gap-6 mb-10 lg:grid-cols-5">
+                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200 group">
+                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                            <div className="bg-gradient-to-br from-sky-400 to-blue-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                            </div>
+                            <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 group-hover:text-sky-500 transition-colors" />
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalEvents}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">Total Événements</p>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200 group">
+                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                            <div className="bg-gradient-to-br from-emerald-400 to-green-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                            </div>
+                            <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 group-hover:text-emerald-500 transition-colors" />
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalRegistrations}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">Mes Inscriptions</p>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200 group">
+                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                            <div className="bg-gradient-to-br from-purple-400 to-violet-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                            </div>
+                            <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 group-hover:text-purple-500 transition-colors" />
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.upcomingEvents}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">À venir</p>
+                    </div>
+
+                    <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6 border border-gray-100 hover:shadow-lg transition-shadow duration-200 group">
+                        <div className="flex items-center justify-between mb-3 sm:mb-4">
+                            <div className="bg-gradient-to-br from-rose-400 to-red-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <Lock className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                            </div>
+                            <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-300 group-hover:text-rose-500 transition-colors" />
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.privateEvents}</p>
+                        <p className="text-xs sm:text-sm text-gray-500 mt-1">Événements Privés</p>
+                    </div>
+
+                    <Link href={isAdmin ? '/dashboard/admin/treasury' : '/dashboard/my-revenue'} className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl shadow-lg p-4 sm:p-6 text-white col-span-2 lg:col-span-1 group hover:shadow-xl transition-all cursor-pointer">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="bg-white bg-opacity-20 w-12 h-12 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                                <Euro className="h-6 w-6 text-white" />
+                            </div>
+                            <ArrowUpRight className="h-5 w-5 text-white text-opacity-50 group-hover:text-opacity-100 transition-colors" />
+                        </div>
+                        <p className="text-2xl sm:text-3xl font-bold">{stats.totalRevenue.toFixed(2)}€</p>
+                        <p className="text-sm text-amber-100 mt-1">Recette</p>
+                    </Link>
+                </div>
 
                 {/* Événements récents */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
