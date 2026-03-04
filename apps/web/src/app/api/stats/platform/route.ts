@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { verifyToken } from '@/lib/jwt';
 import { getPlatformStats } from '@/lib/advancedStatsService';
 

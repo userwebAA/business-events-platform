@@ -4,6 +4,8 @@ import { stripe } from '@/lib/stripe';
 import { sendEventCancelledEmail } from '@/lib/emailTemplates';
 import { verifyToken } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
     request: NextRequest,
     { params }: { params: { id: string } }

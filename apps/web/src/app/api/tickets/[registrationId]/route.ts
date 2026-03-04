@@ -3,6 +3,8 @@ import { generateTicket, getTicketByRegistration } from '@/lib/ticketService';
 import { generateTicketPDF } from '@/lib/pdfTicketGenerator';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
     request: NextRequest,
     { params }: { params: { registrationId: string } }

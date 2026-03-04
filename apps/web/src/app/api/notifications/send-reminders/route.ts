@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { sendEventReminders } from '@/lib/notificationService';
 
 export async function POST(request: NextRequest) {

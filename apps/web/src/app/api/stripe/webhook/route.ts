@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { stripe, calculatePlatformFee, PAYOUT_DELAY_DAYS } from '@/lib/stripe';
 import { generateTicket } from '@/lib/ticketService';

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { securityLogger, SecurityEventType } from '@/lib/security-logger';
 import { getClientIp } from '@/lib/auth-middleware';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }

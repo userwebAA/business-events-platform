@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { sendEventReminders } from '@/lib/notificationService';
 
 // Clé secrète pour protéger le cron (à définir dans .env)

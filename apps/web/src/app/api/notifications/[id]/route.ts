@@ -3,13 +3,15 @@ import { verifyToken } from '@/lib/jwt';
 import { markNotificationAsRead, deleteNotification } from '@/lib/notificationService';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
     request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
         const token = request.headers.get('authorization')?.replace('Bearer ', '');
-        
+
         if (!token) {
             return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
         }
@@ -45,7 +47,7 @@ export async function DELETE(
 ) {
     try {
         const token = request.headers.get('authorization')?.replace('Bearer ', '');
-        
+
         if (!token) {
             return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
         }

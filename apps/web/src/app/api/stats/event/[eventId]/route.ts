@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/jwt';
 import { getEventDetailedStats } from '@/lib/advancedStatsService';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
     request: NextRequest,
     { params }: { params: { eventId: string } }
 ) {
     try {
         const token = request.headers.get('authorization')?.replace('Bearer ', '');
-        
+
         if (!token) {
             return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
         }

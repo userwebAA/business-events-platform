@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { generateInvoiceHTML, generateInvoiceNumber } from '@/lib/invoiceGenerator';
 import puppeteer from 'puppeteer';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
