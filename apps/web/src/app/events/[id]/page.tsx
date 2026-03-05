@@ -71,8 +71,14 @@ export default function EventDetailPage() {
                     setIsRegistered(isUserRegistered);
                     if (foundRegId) setRegistrationId(foundRegId);
 
+                    // Organisateur : déverrouiller l'adresse directement
+                    const isEventOrganizer = user && (data.organizerId === user.id || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
+                    if (isEventOrganizer && data.address) {
+                        setFullAddress(data.address);
+                    }
+
                     // Si inscrit et événement payant, récupérer l'adresse
-                    if (isUserRegistered && data.type === 'paid' && foundRegId) {
+                    if (!isEventOrganizer && isUserRegistered && data.type === 'paid' && foundRegId) {
                         setLoadingAddress(true);
                         try {
                             const addressResponse = await fetch(`/api/events/${params.id}/address`, {
@@ -326,7 +332,7 @@ export default function EventDetailPage() {
                                                 <span className="text-xs text-blue-700 font-bold">Ouvrir dans Google Maps</span>
                                             </a>
                                         </div>
-                                    ) : isRegistered ? (
+                                    ) : (isRegistered || isOrganizer) ? (
                                         loadingAddress ? (
                                             <div className="flex items-center gap-2 mt-1">
                                                 <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-sky-600"></div>
@@ -472,8 +478,29 @@ export default function EventDetailPage() {
                                 )}
                             </div>
 
-                            {/* Bouton inscription */}
-                            {isRegistered ? (
+                            {/* Bouton inscription / panneau organisateur */}
+                            {isOrganizer ? (
+                                <div className="space-y-3">
+                                    <div className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2.5 shadow-lg">
+                                        <Calendar className="h-5 w-5" />
+                                        Votre événement
+                                    </div>
+                                    <Link
+                                        href={`/events/${event.id}/participants`}
+                                        className="w-full bg-sky-50 text-sky-700 py-3.5 rounded-xl font-bold hover:bg-sky-100 transition-all flex items-center justify-center gap-2 border border-sky-200"
+                                    >
+                                        <Users className="h-4 w-4" />
+                                        Voir les participants ({event.currentAttendees})
+                                    </Link>
+                                    <Link
+                                        href="/dashboard/my-payments"
+                                        className="w-full bg-amber-50 text-amber-700 py-3.5 rounded-xl font-bold hover:bg-amber-100 transition-all flex items-center justify-center gap-2 border border-amber-200"
+                                    >
+                                        <Euro className="h-4 w-4" />
+                                        Tableau de bord paiements
+                                    </Link>
+                                </div>
+                            ) : isRegistered ? (
                                 <div className="space-y-3">
                                     <div className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2.5 shadow-lg">
                                         <Check className="h-5 w-5" />
