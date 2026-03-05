@@ -43,13 +43,9 @@ export async function POST(request: NextRequest) {
                 type: 'express',
                 country: 'FR',
                 email: user.email,
-                settings: {
-                    payouts: {
-                        schedule: {
-                            delay_days: 7,
-                            interval: 'daily',
-                        },
-                    },
+                capabilities: {
+                    card_payments: { requested: true },
+                    transfers: { requested: true },
                 },
                 metadata: {
                     userId,
