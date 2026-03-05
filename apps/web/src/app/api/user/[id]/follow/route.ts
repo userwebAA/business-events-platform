@@ -94,6 +94,29 @@ export async function POST(
             update: {},
         });
 
+        // Notification in-app à la personne suivie
+        try {
+            const follower = await prisma.user.findUnique({
+                where: { id: currentUserId },
+                select: { name: true, firstName: true, lastName: true },
+            });
+            const followerName = follower?.firstName && follower?.lastName
+                ? `${follower.firstName} ${follower.lastName}`
+                : follower?.name || 'Quelqu\'un';
+
+            await prisma.notification.create({
+                data: {
+                    userId: targetUserId,
+                    type: 'NEW_FOLLOWER',
+                    title: 'Nouvel abonné',
+                    message: `${followerName} a commencé à vous suivre`,
+                    link: `/profile/${currentUserId}`,
+                },
+            });
+        } catch (notifError) {
+            console.error('Erreur notification follow:', notifError);
+        }
+
         return NextResponse.json({ success: true, isFollowing: true });
     } catch (error) {
         console.error('Erreur follow POST:', error);

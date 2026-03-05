@@ -164,6 +164,12 @@ export default function NotificationCenter() {
                 return '🤝';
             case 'MESSAGE_RECEIVED':
                 return '💬';
+            case 'NEW_EVENT':
+                return '🎉';
+            case 'NEW_FOLLOWER':
+                return '👤';
+            case 'NEW_REGISTRATION':
+                return '🎫';
             default:
                 return '🔔';
         }

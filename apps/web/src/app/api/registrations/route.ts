@@ -146,6 +146,21 @@ export async function POST(request: NextRequest) {
             console.error('⚠️ Erreur envoi notification organisateur:', notifError);
         }
 
+        // Notification in-app à l'organisateur
+        try {
+            await prisma.notification.create({
+                data: {
+                    userId: registration.event.organizerId,
+                    type: 'NEW_REGISTRATION',
+                    title: 'Nouvelle inscription',
+                    message: `${userName} s'est inscrit à votre soirée "${registration.event.title}"`,
+                    link: `/events/${registration.event.id}/participants`,
+                },
+            });
+        } catch (notifInAppError) {
+            console.error('⚠️ Erreur notification in-app organisateur:', notifInAppError);
+        }
+
         // Retourner l'inscription avec l'ID pour accéder à l'adresse de manière sécurisée
         const responseData = {
             ...registration,
