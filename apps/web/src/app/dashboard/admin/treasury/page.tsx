@@ -121,6 +121,7 @@ export default function AdminTreasuryPage() {
     const [stripeAccounts, setStripeAccounts] = useState<StripeAccount[]>([]);
     const [stripeActionLoading, setStripeActionLoading] = useState<string | null>(null);
     const [stripeMessage, setStripeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; action: 'reset' | 'unlink' | null; userId: string | null; userName: string | null }>({ isOpen: false, action: null, userId: null, userName: null });
 
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
@@ -166,10 +167,19 @@ export default function AdminTreasuryPage() {
         }
     };
 
-    const handleStripeAction = async (userId: string, action: 'reset' | 'unlink', userName: string) => {
-        const actionLabel = action === 'reset' ? 'Réinitialiser (supprimer sur Stripe + délier)' : 'Délier le compte (garder sur Stripe)';
-        if (!confirm(`${actionLabel} pour ${userName} ?`)) return;
+    const openConfirmModal = (userId: string, action: 'reset' | 'unlink', userName: string) => {
+        setConfirmModal({ isOpen: true, action, userId, userName });
+    };
 
+    const closeConfirmModal = () => {
+        setConfirmModal({ isOpen: false, action: null, userId: null, userName: null });
+    };
+
+    const handleStripeAction = async () => {
+        const { userId, action, userName } = confirmModal;
+        if (!userId || !action || !userName) return;
+
+        closeConfirmModal();
         setStripeActionLoading(`${userId}-${action}`);
         setStripeMessage(null);
         try {
@@ -556,7 +566,7 @@ export default function AdminTreasuryPage() {
                                                         </div>
                                                         <div className="flex items-center gap-2 shrink-0">
                                                             <button
-                                                                onClick={() => handleStripeAction(acc.id, 'reset', acc.displayName)}
+                                                                onClick={() => openConfirmModal(acc.id, 'reset', acc.displayName)}
                                                                 disabled={stripeActionLoading === `${acc.id}-reset`}
                                                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
                                                                 title="Supprimer le compte sur Stripe + délier"
@@ -569,7 +579,7 @@ export default function AdminTreasuryPage() {
                                                                 Reset
                                                             </button>
                                                             <button
-                                                                onClick={() => handleStripeAction(acc.id, 'unlink', acc.displayName)}
+                                                                onClick={() => openConfirmModal(acc.id, 'unlink', acc.displayName)}
                                                                 disabled={stripeActionLoading === `${acc.id}-unlink`}
                                                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors disabled:opacity-50"
                                                                 title="Délier le compte sans supprimer sur Stripe"
@@ -678,6 +688,59 @@ export default function AdminTreasuryPage() {
                             </>
                         )}
                     </>
+                )}
+
+                {/* Modal de confirmation */}
+                {confirmModal.isOpen && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={closeConfirmModal}>
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-start gap-4">
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${confirmModal.action === 'reset' ? 'bg-red-100' : 'bg-amber-100'
+                                    }`}>
+                                    {confirmModal.action === 'reset' ? (
+                                        <Trash2 className="h-6 w-6 text-red-600" />
+                                    ) : (
+                                        <Unlink className="h-6 w-6 text-amber-600" />
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-2">
+                                        {confirmModal.action === 'reset' ? 'Réinitialiser le compte Stripe' : 'Délier le compte Stripe'}
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mb-4">
+                                        {confirmModal.action === 'reset' ? (
+                                            <>
+                                                Le compte Stripe de <strong>{confirmModal.userName}</strong> sera <strong className="text-red-600">supprimé sur Stripe</strong> et délié de la base de données.
+                                                <br /><br />
+                                                L'utilisateur pourra recréer un nouveau compte.
+                                            </>
+                                        ) : (
+                                            <>
+                                                Le compte Stripe de <strong>{confirmModal.userName}</strong> sera <strong className="text-amber-600">délié</strong> de la base de données mais <strong>restera actif sur Stripe</strong>.
+                                            </>
+                                        )}
+                                    </p>
+                                    <div className="flex gap-3 justify-end">
+                                        <button
+                                            onClick={closeConfirmModal}
+                                            className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                        >
+                                            Annuler
+                                        </button>
+                                        <button
+                                            onClick={handleStripeAction}
+                                            className={`px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors ${confirmModal.action === 'reset'
+                                                    ? 'bg-red-600 hover:bg-red-700'
+                                                    : 'bg-amber-600 hover:bg-amber-700'
+                                                }`}
+                                        >
+                                            {confirmModal.action === 'reset' ? 'Réinitialiser' : 'Délier'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
