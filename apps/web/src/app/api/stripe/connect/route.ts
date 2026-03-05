@@ -57,15 +57,6 @@ export async function POST(request: NextRequest) {
                     card_payments: { requested: true },
                     transfers: { requested: true },
                 },
-                settings: {
-                    payouts: {
-                        schedule: {
-                            delay_days: 7,
-                            interval: 'weekly',
-                            weekly_anchor: 'monday',
-                        },
-                    },
-                },
                 metadata: {
                     userId,
                 },
