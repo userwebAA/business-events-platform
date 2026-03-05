@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { generateInvoiceHTML, generateInvoiceNumber } from '@/lib/invoiceGenerator';
-import puppeteer from 'puppeteer';
+import { generateInvoiceNumber } from '@/lib/invoiceGenerator';
+import { renderToBuffer } from '@react-pdf/renderer';
+import { createInvoiceDocument } from '@/lib/pdfInvoice';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,9 +44,10 @@ export async function GET(
       );
     }
 
-    // Générer la facture HTML
+    // Générer la facture PDF
     const invoiceNumber = generateInvoiceNumber(registration.id, registration.createdAt);
-    const invoiceHTML = generateInvoiceHTML({
+
+    const invoiceData = {
       invoiceNumber,
       date: registration.createdAt,
       eventTitle: registration.event.title,
@@ -56,32 +58,13 @@ export async function GET(
       price: registration.event.price,
       currency: registration.event.currency || 'EUR',
       registrationId: registration.id
-    });
+    };
 
-    // Générer le PDF avec Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    // Générer le PDF avec @react-pdf/renderer
+    const pdfBuffer = await renderToBuffer(createInvoiceDocument(invoiceData));
 
-    const page = await browser.newPage();
-    await page.setContent(invoiceHTML, { waitUntil: 'networkidle0' });
-
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px'
-      }
-    });
-
-    await browser.close();
-
-    // Retourner le PDF pour affichage dans le navigateur
-    return new NextResponse(Buffer.from(pdfBuffer), {
+    // Retourner le PDF
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="facture-${invoiceNumber}.pdf"`
