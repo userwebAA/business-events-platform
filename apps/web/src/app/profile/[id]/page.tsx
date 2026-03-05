@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
     User, MapPin, Briefcase, Building, Calendar, Users, ExternalLink,
     ArrowLeft, Loader2, LinkIcon, Award, Clock, ChevronRight, Lock,
-    BadgeCheck, Eye, EyeOff
+    BadgeCheck, Eye, EyeOff, UserPlus, UserMinus, Bell
 } from 'lucide-react';
 
 interface PublicProfile {
@@ -63,6 +63,10 @@ export default function PublicProfilePage() {
     const [hiddenEventIds, setHiddenEventIds] = useState<string[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [followersCount, setFollowersCount] = useState(0);
+    const [followingCount, setFollowingCount] = useState(0);
+    const [followLoading, setFollowLoading] = useState(false);
 
     const userId = params.id as string;
     const isOwnProfile = currentUser?.id === userId;
@@ -96,6 +100,48 @@ export default function PublicProfilePage() {
         };
         if (userId) fetchProfile();
     }, [userId]);
+
+    // Fetch follow status
+    useEffect(() => {
+        const fetchFollowStatus = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const headers: Record<string, string> = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                const res = await fetch(`/api/user/${userId}/follow`, { headers });
+                if (res.ok) {
+                    const data = await res.json();
+                    setIsFollowing(data.isFollowing);
+                    setFollowersCount(data.followersCount);
+                    setFollowingCount(data.followingCount);
+                }
+            } catch (e) {
+                console.error('Erreur fetch follow:', e);
+            }
+        };
+        if (userId) fetchFollowStatus();
+    }, [userId, currentUser]);
+
+    const handleFollow = async () => {
+        if (!currentUser) return;
+        setFollowLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const method = isFollowing ? 'DELETE' : 'POST';
+            const res = await fetch(`/api/user/${userId}/follow`, {
+                method,
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (res.ok) {
+                setIsFollowing(!isFollowing);
+                setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
+            }
+        } catch (e) {
+            console.error('Erreur follow:', e);
+        } finally {
+            setFollowLoading(false);
+        }
+    };
 
     const displayName = profile?.firstName && profile?.lastName
         ? `${profile.firstName} ${profile.lastName}`
@@ -262,10 +308,35 @@ export default function PublicProfilePage() {
                                             Membre depuis {memberSince}
                                         </span>
                                     )}
+                                    <span className="flex items-center gap-1.5">
+                                        <Users className="h-3.5 w-3.5 text-gray-400" />
+                                        <strong className="text-gray-700">{followersCount}</strong> abonné{followersCount > 1 ? 's' : ''}
+                                        <span className="text-gray-300">·</span>
+                                        <strong className="text-gray-700">{followingCount}</strong> abonnement{followingCount > 1 ? 's' : ''}
+                                    </span>
                                 </div>
 
                                 {/* Actions */}
                                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-4">
+                                    {!isOwnProfile && currentUser && (
+                                        <button
+                                            onClick={handleFollow}
+                                            disabled={followLoading}
+                                            className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl transition-all shadow-sm disabled:opacity-50 ${isFollowing
+                                                    ? 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 border border-gray-200'
+                                                    : 'bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700'
+                                                }`}
+                                        >
+                                            {followLoading ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : isFollowing ? (
+                                                <UserMinus className="h-4 w-4" />
+                                            ) : (
+                                                <UserPlus className="h-4 w-4" />
+                                            )}
+                                            {isFollowing ? 'Abonné' : 'Suivre'}
+                                        </button>
+                                    )}
                                     {profile.linkedin && (
                                         <a
                                             href={profile.linkedin}

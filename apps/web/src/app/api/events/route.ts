@@ -143,6 +143,38 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Notifier les followers du créateur
+        if (organizerId !== 'anonymous' && !isPrivate) {
+            try {
+                const followers = await prisma.follow.findMany({
+                    where: { followingId: organizerId },
+                    select: { followerId: true },
+                });
+
+                if (followers.length > 0) {
+                    const organizer = await prisma.user.findUnique({
+                        where: { id: organizerId },
+                        select: { name: true, firstName: true, lastName: true },
+                    });
+                    const organizerName = organizer?.firstName && organizer?.lastName
+                        ? `${organizer.firstName} ${organizer.lastName}`
+                        : organizer?.name || 'Un organisateur';
+
+                    await prisma.notification.createMany({
+                        data: followers.map((f: { followerId: string }) => ({
+                            userId: f.followerId,
+                            type: 'NEW_EVENT' as const,
+                            title: 'Nouvelle soirée',
+                            message: `${organizerName} a créé une nouvelle soirée : "${event.title}"`,
+                            link: `/events/${event.id}`,
+                        })),
+                    });
+                }
+            } catch (e) {
+                console.error('Erreur notification followers:', e);
+            }
+        }
+
         return NextResponse.json(event, { status: 201 });
     } catch (error) {
         console.error('❌ Erreur création événement:', error);

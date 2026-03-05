@@ -134,6 +134,8 @@ model User {
   eventBadges       EventBadge[]
   payments          Payment[]
   payouts           Payout[]
+  followers         Follow[]       @relation("following")
+  following         Follow[]       @relation("followers")
   
   @@index([email])
 }
@@ -156,6 +158,20 @@ model EventBadge {
   @@index([eventId])
 }
 
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   // L'utilisateur qui suit
+  followingId String   // L'utilisateur suivi
+  createdAt   DateTime @default(now())
+  
+  follower    User     @relation("followers", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
 enum NotificationType {
   EVENT_REMINDER
   EVENT_UPDATE
@@ -163,6 +179,7 @@ enum NotificationType {
   REGISTRATION_CONFIRMED
   NETWORKING_MATCH
   MESSAGE_RECEIVED
+  NEW_EVENT
   SYSTEM
 }
 

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, ArrowRight, Ticket, AlertTriangle, XCircle, Loader2, User as UserIcon, FileText } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, ArrowRight, Ticket, AlertTriangle, XCircle, Loader2, User as UserIcon, FileText, Heart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import { Event } from 'shared';
@@ -25,6 +25,9 @@ export default function EventDetailPage() {
     const [cancelling, setCancelling] = useState(false);
     const [cancelError, setCancelError] = useState('');
     const [registrationId, setRegistrationId] = useState<string | null>(null);
+    const [goodEveningDone, setGoodEveningDone] = useState(false);
+    const [goodEveningLoading, setGoodEveningLoading] = useState(false);
+    const [goodEveningCount, setGoodEveningCount] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -572,6 +575,45 @@ export default function EventDetailPage() {
                                     </>
                                 )}
                             </button>
+
+                            {/* Bouton "Bonne soirée" (événement passé, inscrit ou organisateur) */}
+                            {(isRegistered || isOrganizer) && !isCancelled && event?.date && new Date(event.date) < new Date() && (
+                                <button
+                                    onClick={async () => {
+                                        if (!user) return;
+                                        setGoodEveningLoading(true);
+                                        try {
+                                            const token = localStorage.getItem('token');
+                                            const res = await fetch(`/api/events/${event.id}/good-evening`, {
+                                                method: 'POST',
+                                                headers: { 'Authorization': `Bearer ${token}` },
+                                            });
+                                            if (res.ok) {
+                                                const data = await res.json();
+                                                setGoodEveningDone(true);
+                                                setGoodEveningCount(data.followedCount);
+                                            }
+                                        } catch (e) {
+                                            console.error('Erreur bonne soirée:', e);
+                                        } finally {
+                                            setGoodEveningLoading(false);
+                                        }
+                                    }}
+                                    disabled={goodEveningDone || goodEveningLoading}
+                                    className={`w-full mt-3 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-2 ${goodEveningDone
+                                            ? 'bg-pink-50 border-pink-200 text-pink-700'
+                                            : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-transparent hover:from-pink-600 hover:to-rose-600 shadow-md'
+                                        } disabled:opacity-70`}
+                                >
+                                    {goodEveningLoading ? (
+                                        <><Loader2 className="h-4 w-4 animate-spin" /> Connexion en cours...</>
+                                    ) : goodEveningDone ? (
+                                        <><Heart className="h-4 w-4 fill-current" /> {goodEveningCount} personne{goodEveningCount > 1 ? 's' : ''} suivie{goodEveningCount > 1 ? 's' : ''} !</>
+                                    ) : (
+                                        <><Heart className="h-4 w-4" /> Bonne soirée ! Suivre tous les participants</>
+                                    )}
+                                </button>
+                            )}
 
                             {/* Bouton annuler (organisateur/admin, seulement si pas passé) */}
                             {isOrganizer && !isCancelled && event?.date && new Date(event.date) > new Date() && (
