@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Euro, TrendingUp, RotateCcw, Loader2, CheckCircle, XCircle, Clock, AlertTriangle, Info } from 'lucide-react';
+import { ArrowLeft, Euro, TrendingUp, RotateCcw, Loader2, CheckCircle, XCircle, Clock, AlertTriangle, Info, ChevronDown, ChevronRight, FileText, Calendar, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Navbar from '@/components/Navbar';
@@ -20,8 +20,27 @@ interface PaymentItem {
     eventId: string;
     eventTitle: string;
     eventDate: string | null;
+    eventPrice: number | null;
     eventStatus: string | null;
+    eventAttendees: number;
     registrationId: string | null;
+    participantName: string;
+    participantEmail: string;
+}
+
+interface EventGroup {
+    eventId: string;
+    eventTitle: string;
+    eventDate: string | null;
+    eventPrice: number | null;
+    eventStatus: string | null;
+    eventAttendees: number;
+    payments: PaymentItem[];
+    totalAmount: number;
+    totalCreatorAmount: number;
+    totalFees: number;
+    succeededCount: number;
+    refundedCount: number;
 }
 
 interface FeeInfo {
@@ -50,7 +69,55 @@ export default function MyPaymentsPage() {
     const [refunding, setRefunding] = useState<string | null>(null);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [showFeeInfo, setShowFeeInfo] = useState(false);
-    const [confirmRefund, setConfirmRefund] = useState<{ isOpen: boolean; paymentId: string | null; eventTitle: string | null; amount: number }>({ isOpen: false, paymentId: null, eventTitle: null, amount: 0 });
+    const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+    const [confirmRefund, setConfirmRefund] = useState<{ isOpen: boolean; paymentId: string | null; eventTitle: string | null; amount: number; participantName: string }>({ isOpen: false, paymentId: null, eventTitle: null, amount: 0, participantName: '' });
+
+    // Grouper les paiements par événement
+    const eventGroups = useMemo<EventGroup[]>(() => {
+        const groupMap = new Map<string, EventGroup>();
+        payments.forEach(p => {
+            if (!groupMap.has(p.eventId)) {
+                groupMap.set(p.eventId, {
+                    eventId: p.eventId,
+                    eventTitle: p.eventTitle,
+                    eventDate: p.eventDate,
+                    eventPrice: p.eventPrice,
+                    eventStatus: p.eventStatus,
+                    eventAttendees: p.eventAttendees,
+                    payments: [],
+                    totalAmount: 0,
+                    totalCreatorAmount: 0,
+                    totalFees: 0,
+                    succeededCount: 0,
+                    refundedCount: 0,
+                });
+            }
+            const group = groupMap.get(p.eventId)!;
+            group.payments.push(p);
+            if (p.status === 'SUCCEEDED') {
+                group.totalAmount += p.amount;
+                group.totalCreatorAmount += p.creatorAmount;
+                group.totalFees += p.platformFee;
+                group.succeededCount++;
+            } else if (p.status === 'REFUNDED') {
+                group.refundedCount++;
+            }
+        });
+        // Trier par date d'événement (plus récent d'abord)
+        return Array.from(groupMap.values()).sort((a, b) => {
+            if (!a.eventDate || !b.eventDate) return 0;
+            return new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime();
+        });
+    }, [payments]);
+
+    const toggleEvent = (eventId: string) => {
+        setExpandedEvents(prev => {
+            const next = new Set(prev);
+            if (next.has(eventId)) next.delete(eventId);
+            else next.add(eventId);
+            return next;
+        });
+    };
 
     useEffect(() => {
         fetchPayments();
@@ -68,6 +135,11 @@ export default function MyPaymentsPage() {
                 setPayments(data.payments);
                 setStats(data.stats);
                 setFeeInfo(data.feeInfo);
+                // Ouvrir automatiquement le premier événement
+                if (data.payments.length > 0) {
+                    const firstEventId = data.payments[0].eventId;
+                    setExpandedEvents(new Set([firstEventId]));
+                }
             }
         } catch (error) {
             console.error('Error fetching payments:', error);
@@ -77,10 +149,10 @@ export default function MyPaymentsPage() {
     };
 
     const handleRefund = async () => {
-        const { paymentId, eventTitle } = confirmRefund;
+        const { paymentId, eventTitle, participantName } = confirmRefund;
         if (!paymentId) return;
 
-        setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0 });
+        setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0, participantName: '' });
         setRefunding(paymentId);
         setMessage(null);
 
@@ -96,7 +168,7 @@ export default function MyPaymentsPage() {
             });
 
             if (res.ok) {
-                setMessage({ type: 'success', text: `Remboursement effectué pour "${eventTitle}"` });
+                setMessage({ type: 'success', text: `Remboursement de ${participantName} effectué pour "${eventTitle}"` });
                 fetchPayments();
             } else {
                 const data = await res.json();
@@ -164,7 +236,7 @@ export default function MyPaymentsPage() {
                         Retour au tableau de bord
                     </Link>
                     <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Mes Paiements Reçus</h1>
-                    <p className="text-gray-500 mt-1">Suivez vos revenus et gérez les remboursements</p>
+                    <p className="text-gray-500 mt-1">Suivez vos revenus par événement et gérez les remboursements</p>
                 </div>
 
                 {/* Message */}
@@ -175,7 +247,7 @@ export default function MyPaymentsPage() {
                     </div>
                 )}
 
-                {/* Stats */}
+                {/* Stats globales */}
                 {stats && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-5">
@@ -276,8 +348,8 @@ export default function MyPaymentsPage() {
                     </div>
                 )}
 
-                {/* Payments Table */}
-                {payments.length === 0 ? (
+                {/* Événements avec paiements */}
+                {eventGroups.length === 0 ? (
                     <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
                         <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <Euro className="h-10 w-10 text-gray-400" />
@@ -289,76 +361,176 @@ export default function MyPaymentsPage() {
                         </Link>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-gray-100 bg-gray-50/50">
-                                        <th className="text-left px-4 py-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Événement</th>
-                                        <th className="text-left px-4 py-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Date</th>
-                                        <th className="text-right px-4 py-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Montant</th>
-                                        <th className="text-right px-4 py-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Frais</th>
-                                        <th className="text-right px-4 py-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Vous recevez</th>
-                                        <th className="text-center px-4 py-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Statut</th>
-                                        <th className="text-center px-4 py-3 font-bold text-gray-600 text-xs uppercase tracking-wider">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {payments.map((payment) => (
-                                        <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-4 py-3">
-                                                <Link href={`/events/${payment.eventId}`} className="font-semibold text-gray-900 hover:text-sky-600 transition-colors">
-                                                    {payment.eventTitle}
-                                                </Link>
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
-                                                {format(new Date(payment.createdAt), 'd MMM yyyy HH:mm', { locale: fr })}
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-bold text-gray-900 whitespace-nowrap">
-                                                {payment.amount.toFixed(2)}€
-                                            </td>
-                                            <td className="px-4 py-3 text-right text-amber-600 font-medium whitespace-nowrap">
-                                                -{payment.platformFee.toFixed(2)}€
-                                            </td>
-                                            <td className="px-4 py-3 text-right font-bold text-emerald-600 whitespace-nowrap">
-                                                {payment.creatorAmount.toFixed(2)}€
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                {getStatusBadge(payment.status)}
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                {payment.status === 'SUCCEEDED' && (
-                                                    <button
-                                                        onClick={() => setConfirmRefund({ isOpen: true, paymentId: payment.id, eventTitle: payment.eventTitle, amount: payment.amount })}
-                                                        disabled={refunding === payment.id}
-                                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
-                                                    >
-                                                        {refunding === payment.id ? (
-                                                            <Loader2 className="h-3 w-3 animate-spin" />
-                                                        ) : (
-                                                            <RotateCcw className="h-3 w-3" />
-                                                        )}
-                                                        Rembourser
-                                                    </button>
-                                                )}
-                                                {payment.status === 'REFUNDED' && payment.refundedAt && (
-                                                    <span className="text-xs text-gray-400">
-                                                        {format(new Date(payment.refundedAt), 'd MMM yyyy', { locale: fr })}
+                    <div className="space-y-4">
+                        {eventGroups.map((group) => {
+                            const isExpanded = expandedEvents.has(group.eventId);
+                            return (
+                                <div key={group.eventId} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                    {/* En-tête de l'événement (cliquable) */}
+                                    <button
+                                        onClick={() => toggleEvent(group.eventId)}
+                                        className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-gray-50/50 transition-colors text-left"
+                                    >
+                                        <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                                            {isExpanded ? (
+                                                <ChevronDown className="h-5 w-5 text-gray-400 shrink-0" />
+                                            ) : (
+                                                <ChevronRight className="h-5 w-5 text-gray-400 shrink-0" />
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h3 className="font-bold text-gray-900 truncate">{group.eventTitle}</h3>
+                                                    {group.eventStatus === 'cancelled' && (
+                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-bold bg-red-50 text-red-600 border border-red-200">Annulé</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                                                    {group.eventDate && (
+                                                        <span className="inline-flex items-center gap-1">
+                                                            <Calendar className="h-3 w-3" />
+                                                            {format(new Date(group.eventDate), 'd MMM yyyy', { locale: fr })}
+                                                        </span>
+                                                    )}
+                                                    <span className="inline-flex items-center gap-1">
+                                                        <Users className="h-3 w-3" />
+                                                        {group.eventAttendees} inscrit{group.eventAttendees > 1 ? 's' : ''}
                                                     </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                                                    {group.eventPrice && (
+                                                        <span className="inline-flex items-center gap-1">
+                                                            <Euro className="h-3 w-3" />
+                                                            {group.eventPrice}€ / place
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-4 sm:gap-6 shrink-0 ml-3">
+                                            <div className="text-right hidden sm:block">
+                                                <p className="text-sm font-bold text-emerald-600">{group.totalCreatorAmount.toFixed(2)}€</p>
+                                                <p className="text-xs text-gray-400">{group.succeededCount} paiement{group.succeededCount > 1 ? 's' : ''}</p>
+                                            </div>
+                                            <div className="sm:hidden">
+                                                <p className="text-sm font-bold text-emerald-600">{group.totalCreatorAmount.toFixed(2)}€</p>
+                                            </div>
+                                        </div>
+                                    </button>
+
+                                    {/* Tableau des paiements (dépliable) */}
+                                    {isExpanded && (
+                                        <div className="border-t border-gray-100">
+                                            {/* Résumé événement */}
+                                            <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50/50 border-b border-gray-100">
+                                                <div className="text-center">
+                                                    <p className="text-lg font-bold text-gray-900">{group.totalAmount.toFixed(2)}€</p>
+                                                    <p className="text-xs text-gray-500">Total brut</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-lg font-bold text-amber-600">-{group.totalFees.toFixed(2)}€</p>
+                                                    <p className="text-xs text-gray-500">Frais</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-lg font-bold text-emerald-600">{group.totalCreatorAmount.toFixed(2)}€</p>
+                                                    <p className="text-xs text-gray-500">Net reçu</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm">
+                                                    <thead>
+                                                        <tr className="border-b border-gray-100 bg-gray-50/30">
+                                                            <th className="text-left px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Participant</th>
+                                                            <th className="text-left px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Date</th>
+                                                            <th className="text-right px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Montant</th>
+                                                            <th className="text-right px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Frais</th>
+                                                            <th className="text-right px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Net</th>
+                                                            <th className="text-center px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Statut</th>
+                                                            <th className="text-center px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-50">
+                                                        {group.payments.map((payment) => (
+                                                            <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
+                                                                <td className="px-4 py-3">
+                                                                    <p className="font-semibold text-gray-900 text-sm">{payment.participantName}</p>
+                                                                    {payment.participantEmail && (
+                                                                        <p className="text-xs text-gray-400">{payment.participantEmail}</p>
+                                                                    )}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                                                                    {format(new Date(payment.createdAt), 'd MMM yyyy HH:mm', { locale: fr })}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right font-bold text-gray-900 whitespace-nowrap">
+                                                                    {payment.amount.toFixed(2)}€
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right text-amber-600 font-medium whitespace-nowrap">
+                                                                    -{payment.platformFee.toFixed(2)}€
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right font-bold text-emerald-600 whitespace-nowrap">
+                                                                    {payment.creatorAmount.toFixed(2)}€
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    {getStatusBadge(payment.status)}
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <div className="flex items-center justify-center gap-1.5">
+                                                                        {payment.registrationId && payment.status === 'SUCCEEDED' && (
+                                                                            <button
+                                                                                onClick={() => window.open(`/api/registrations/${payment.registrationId}/invoice`, '_blank')}
+                                                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-sky-600 bg-sky-50 hover:bg-sky-100 transition-colors"
+                                                                                title="Télécharger la facture"
+                                                                            >
+                                                                                <FileText className="h-3 w-3" />
+                                                                                Facture
+                                                                            </button>
+                                                                        )}
+                                                                        {payment.status === 'SUCCEEDED' && (
+                                                                            <button
+                                                                                onClick={() => setConfirmRefund({ isOpen: true, paymentId: payment.id, eventTitle: payment.eventTitle, amount: payment.amount, participantName: payment.participantName })}
+                                                                                disabled={refunding === payment.id}
+                                                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                                            >
+                                                                                {refunding === payment.id ? (
+                                                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                                                ) : (
+                                                                                    <RotateCcw className="h-3 w-3" />
+                                                                                )}
+                                                                                Rembourser
+                                                                            </button>
+                                                                        )}
+                                                                        {payment.status === 'REFUNDED' && payment.refundedAt && (
+                                                                            <span className="text-xs text-gray-400">
+                                                                                Remb. {format(new Date(payment.refundedAt), 'd MMM yyyy', { locale: fr })}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            {/* Lien vers l'événement */}
+                                            <div className="p-3 bg-gray-50/50 border-t border-gray-100 flex justify-end">
+                                                <Link
+                                                    href={`/events/${group.eventId}`}
+                                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 hover:text-sky-700 transition-colors"
+                                                >
+                                                    Voir l'événement →
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>
 
             {/* Modal de confirmation de remboursement */}
             {confirmRefund.isOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0 })}>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0, participantName: '' })}>
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-red-100">
@@ -367,13 +539,13 @@ export default function MyPaymentsPage() {
                             <div className="flex-1">
                                 <h3 className="text-lg font-bold text-gray-900 mb-2">Confirmer le remboursement</h3>
                                 <p className="text-sm text-gray-600 mb-4">
-                                    Vous allez rembourser <strong>{confirmRefund.amount.toFixed(2)}€</strong> pour l'inscription à <strong>"{confirmRefund.eventTitle}"</strong>.
+                                    Vous allez rembourser <strong>{confirmRefund.amount.toFixed(2)}€</strong> à <strong>{confirmRefund.participantName}</strong> pour l'inscription à <strong>"{confirmRefund.eventTitle}"</strong>.
                                     <br /><br />
                                     <span className="text-red-600 font-medium">Cette action est irréversible.</span> Le participant sera remboursé et son inscription sera annulée.
                                 </p>
                                 <div className="flex gap-3 justify-end">
                                     <button
-                                        onClick={() => setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0 })}
+                                        onClick={() => setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0, participantName: '' })}
                                         className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
                                     >
                                         Annuler

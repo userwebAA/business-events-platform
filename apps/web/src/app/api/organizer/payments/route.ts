@@ -30,9 +30,17 @@ export async function GET(request: NextRequest) {
         const eventIds = [...new Set(payments.map(p => p.eventId))];
         const events = await prisma.event.findMany({
             where: { id: { in: eventIds } },
-            select: { id: true, title: true, date: true, price: true, type: true, status: true },
+            select: { id: true, title: true, date: true, price: true, type: true, status: true, currentAttendees: true },
         });
         const eventMap = new Map(events.map(e => [e.id, e]));
+
+        // Récupérer les inscriptions associées (nom du participant)
+        const registrationIds = payments.map(p => p.registrationId).filter(Boolean) as string[];
+        const registrations = registrationIds.length > 0 ? await prisma.registration.findMany({
+            where: { id: { in: registrationIds } },
+            select: { id: true, formData: true },
+        }) : [];
+        const regMap = new Map(registrations.map(r => [r.id, r]));
 
         // Calculer les stats
         const succeededPayments = payments.filter(p => p.status === 'SUCCEEDED');
@@ -42,9 +50,13 @@ export async function GET(request: NextRequest) {
         const totalRefunded = refundedPayments.reduce((sum, p) => sum + p.amount, 0);
         const totalPlatformFees = succeededPayments.reduce((sum, p) => sum + p.platformFee, 0);
 
-        // Enrichir les paiements avec les infos événement
+        // Enrichir les paiements avec les infos événement + participant
         const enrichedPayments = payments.map(p => {
             const event = eventMap.get(p.eventId);
+            const reg = p.registrationId ? regMap.get(p.registrationId) : null;
+            const formData = reg?.formData as any;
+            const participantName = formData?.name || formData?.firstName || 'Participant';
+            const participantEmail = formData?.email || '';
             return {
                 id: p.id,
                 amount: p.amount,
@@ -57,8 +69,12 @@ export async function GET(request: NextRequest) {
                 eventId: p.eventId,
                 eventTitle: event?.title || 'Événement supprimé',
                 eventDate: event?.date,
+                eventPrice: event?.price,
                 eventStatus: event?.status,
+                eventAttendees: event?.currentAttendees || 0,
                 registrationId: p.registrationId,
+                participantName,
+                participantEmail,
             };
         });
 
