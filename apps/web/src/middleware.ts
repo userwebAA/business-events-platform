@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/jwt';
 
 export function middleware(request: NextRequest) {
-  const cookieToken = request.cookies.get('token')?.value;
-  const token = cookieToken || request.headers.get('authorization')?.replace('Bearer ', '');
+  const token = request.cookies.get('token')?.value;
 
   const { pathname, searchParams } = request.nextUrl;
 
@@ -14,46 +12,21 @@ export function middleware(request: NextRequest) {
     route === '/' ? pathname === '/' : pathname.startsWith(route)
   );
 
-  // Si token existe, vérifier sa validité
+  // Si pas de token et route non publique : rediriger vers login
+  if (!token && !isPublicRoute) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Si token existe et utilisateur sur page login/register : rediriger vers dashboard
   if (token) {
-    const decoded = verifyToken(token);
-
-    // Token invalide/expiré : nettoyer le cookie
-    if (!decoded) {
-      const response = NextResponse.next();
-      response.cookies.delete('token');
-      // Si route non publique, rediriger vers login
-      if (!isPublicRoute) {
-        const loginUrl = new URL('/login', request.url);
-        loginUrl.searchParams.set('redirect', pathname);
-        return NextResponse.redirect(loginUrl);
-      }
-      return response;
-    }
-
-    // Token valide : si sur page auth, rediriger vers dashboard
     const authPages = ['/login', '/register', '/forgot-password'];
     const isAuthPage = authPages.some(route => pathname.startsWith(route));
     if (isAuthPage) {
       const redirectTo = searchParams.get('redirect') || '/dashboard';
       return NextResponse.redirect(new URL(redirectTo, request.url));
     }
-
-    // Token valide mais pas dans le cookie (seulement dans header) : synchroniser
-    if (!cookieToken) {
-      const response = NextResponse.next();
-      response.cookies.set('token', token, { path: '/', maxAge: 60 * 60 * 24 * 7 });
-      return response;
-    }
-
-    return NextResponse.next();
-  }
-
-  // Pas de token et route non publique : rediriger vers login
-  if (!isPublicRoute) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
