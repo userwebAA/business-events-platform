@@ -32,13 +32,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const checkAuth = async () => {
         const token = localStorage.getItem('token');
-        const sessionActive = sessionStorage.getItem('sessionActive');
 
-        // Si pas de token ou pas de session active, déconnecter
-        if (!token || !sessionActive) {
-            localStorage.removeItem('token');
-            sessionStorage.removeItem('sessionActive');
-            document.cookie = 'token=; path=/; max-age=0';
+        // Si pas de token, pas connecté
+        if (!token) {
             setIsLoading(false);
             return;
         }
@@ -53,16 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (response.ok) {
                 const data = await response.json();
                 setUser(data.user);
+                // S'assurer que le cookie est synchronisé
+                document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
             } else {
+                // Token invalide/expiré côté serveur
                 localStorage.removeItem('token');
-                sessionStorage.removeItem('sessionActive');
                 document.cookie = 'token=; path=/; max-age=0';
             }
         } catch (error) {
             console.error('Auth check error:', error);
-            localStorage.removeItem('token');
-            sessionStorage.removeItem('sessionActive');
-            document.cookie = 'token=; path=/; max-age=0';
+            // En cas d'erreur réseau, garder le token (ne pas déconnecter)
         } finally {
             setIsLoading(false);
         }
@@ -84,7 +80,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const data = await response.json();
         localStorage.setItem('token', data.token);
-        sessionStorage.setItem('sessionActive', 'true'); // Marquer la session comme active
         // Stocker aussi dans un cookie pour le middleware
         document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 jours
         setUser(data.user);
@@ -106,7 +101,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const data = await response.json();
         localStorage.setItem('token', data.token);
-        sessionStorage.setItem('sessionActive', 'true'); // Marquer la session comme active
         // Stocker aussi dans un cookie pour le middleware
         document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 jours
         setUser(data.user);
@@ -128,7 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         // 2. Nettoyer le stockage local
         localStorage.removeItem('token');
-        sessionStorage.removeItem('sessionActive');
         document.cookie = 'token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         // 3. Rediriger immédiatement (pas de setUser pour éviter un re-render qui bloque)
         window.location.href = '/';
