@@ -186,37 +186,52 @@ export async function GET(request: NextRequest) {
             },
         });
 
-        // Récupérer les emails des inscriptions pour matcher avec les profils utilisateurs
+        // Récupérer les profils utilisateurs par userId (priorité) puis par email (fallback)
+        const userIds = registrations
+            .map(r => r.userId)
+            .filter(Boolean) as string[];
+
         const emails = registrations
+            .filter(r => !r.userId)
             .map(r => {
                 const fd = r.formData as any;
                 return fd?.email || fd?.mail || null;
             })
             .filter(Boolean) as string[];
 
-        // Chercher les utilisateurs correspondants par email
-        const users = emails.length > 0
-            ? await prisma.user.findMany({
-                where: { email: { in: emails } },
-                select: {
-                    id: true,
-                    email: true,
-                    name: true,
-                    firstName: true,
-                    lastName: true,
-                    photo: true,
-                    company: true,
-                    position: true,
-                },
-            })
-            : [];
+        const userSelect = {
+            id: true,
+            email: true,
+            name: true,
+            firstName: true,
+            lastName: true,
+            photo: true,
+            company: true,
+            position: true,
+        };
 
-        const usersByEmail = new Map(users.map(u => [u.email, u]));
+        const [usersById, usersByEmail] = await Promise.all([
+            userIds.length > 0
+                ? prisma.user.findMany({ where: { id: { in: userIds } }, select: userSelect })
+                : [],
+            emails.length > 0
+                ? prisma.user.findMany({ where: { email: { in: emails } }, select: userSelect })
+                : [],
+        ]);
+
+        const userByIdMap = new Map(usersById.map(u => [u.id, u]));
+        const userByEmailMap = new Map(usersByEmail.map(u => [u.email, u]));
 
         const responseData = registrations.map(registration => {
-            const fd = registration.formData as any;
-            const email = fd?.email || fd?.mail || null;
-            const matchedUser = email ? usersByEmail.get(email) || null : null;
+            let matchedUser = null;
+            if (registration.userId) {
+                matchedUser = userByIdMap.get(registration.userId) || null;
+            }
+            if (!matchedUser) {
+                const fd = registration.formData as any;
+                const email = fd?.email || fd?.mail || null;
+                if (email) matchedUser = userByEmailMap.get(email) || null;
+            }
 
             return {
                 ...registration,
