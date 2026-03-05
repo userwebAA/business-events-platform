@@ -105,7 +105,7 @@ export default function EventDetailPage() {
         };
 
         fetchData();
-    }, [params.id]);
+    }, [params.id, user]);
 
     const handleShare = useCallback(async () => {
         const url = window.location.href;

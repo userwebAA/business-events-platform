@@ -7,6 +7,7 @@ import { ArrowLeft, Mail, Phone, Building, Users, Briefcase, Linkedin, ChevronRi
 import Navbar from '@/components/Navbar';
 import Badge from '@/components/Badge';
 import { Event, Registration, BadgeType } from 'shared';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserProfile {
     id: string;
@@ -20,20 +21,16 @@ interface UserProfile {
 
 export default function EventParticipantsPage() {
     const params = useParams();
+    const { user } = useAuth();
     const eventId = params.id as string;
     const [event, setEvent] = useState<Event | null>(null);
     const [registrations, setRegistrations] = useState<(Registration & { userProfile?: UserProfile | null })[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isRegistered, setIsRegistered] = useState(false);
+    const [hasAccess, setHasAccess] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Vérifier si l'utilisateur est inscrit
-                const registeredIds = JSON.parse(sessionStorage.getItem('registeredEvents') || '[]');
-                const userIsRegistered = registeredIds.includes(eventId);
-                setIsRegistered(userIsRegistered);
-
                 // Récupérer l'événement
                 const eventRes = await fetch(`/api/events/${eventId}`);
                 const eventData = await eventRes.json();
@@ -43,8 +40,33 @@ export default function EventParticipantsPage() {
                 };
                 setEvent(eventWithDate);
 
-                // Si inscrit, récupérer la liste des participants (accès immédiat)
-                if (userIsRegistered) {
+                // Vérifier si organisateur
+                const isOrganizer = user && (eventData.organizerId === user.id || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
+
+                // Vérifier si inscrit (DB puis sessionStorage)
+                let userIsRegistered = false;
+                const token = localStorage.getItem('token');
+                if (token) {
+                    try {
+                        const regRes = await fetch('/api/user/registrations', {
+                            headers: { 'Authorization': `Bearer ${token}` },
+                        });
+                        if (regRes.ok) {
+                            const regs = await regRes.json();
+                            userIsRegistered = regs.some((r: any) => r.eventId === eventId);
+                        }
+                    } catch { }
+                }
+                if (!userIsRegistered) {
+                    const registeredIds = JSON.parse(sessionStorage.getItem('registeredEvents') || '[]');
+                    userIsRegistered = registeredIds.includes(eventId);
+                }
+
+                const canAccess = isOrganizer || userIsRegistered;
+                setHasAccess(canAccess);
+
+                // Si accès autorisé, récupérer la liste des participants
+                if (canAccess) {
                     const registrationsRes = await fetch(`/api/registrations?eventId=${eventId}`);
                     const registrationsData = await registrationsRes.json();
                     setRegistrations(registrationsData);
@@ -57,7 +79,7 @@ export default function EventParticipantsPage() {
         };
 
         fetchData();
-    }, [eventId]);
+    }, [eventId, user]);
 
     if (loading) {
         return (
@@ -80,7 +102,7 @@ export default function EventParticipantsPage() {
         );
     }
 
-    if (!isRegistered) {
+    if (!hasAccess) {
         return (
             <div className="min-h-screen bg-gray-50">
                 <Navbar />
