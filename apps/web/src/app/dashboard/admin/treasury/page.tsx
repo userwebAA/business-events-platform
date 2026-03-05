@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
     ArrowLeft, Euro, Users, Calendar, TrendingUp,
     Loader2, ChevronDown, ChevronUp, User, CreditCard,
-    Clock, CheckCircle, AlertCircle, ArrowDownRight, ArrowUpRight, Banknote
+    Clock, CheckCircle, AlertCircle, ArrowDownRight, ArrowUpRight, Banknote, RotateCcw
 } from 'lucide-react';
 
 interface StripeMovement {
@@ -103,6 +103,8 @@ export default function AdminTreasuryPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<'payments' | 'payouts' | 'organizers'>('payments');
     const [expandedOrganizer, setExpandedOrganizer] = useState<string | null>(null);
+    const [refundingId, setRefundingId] = useState<string | null>(null);
+    const [refundMessage, setRefundMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
@@ -129,6 +131,32 @@ export default function AdminTreasuryPage() {
             console.error('Error fetching treasury:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleRefund = async (paymentId: string, eventTitle: string, amount: number) => {
+        if (!confirm(`Rembourser ${amount.toFixed(2)}€ pour "${eventTitle}" ?\nCette action est irréversible.`)) return;
+
+        setRefundingId(paymentId);
+        setRefundMessage(null);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/stripe/refund', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ paymentId, reason: 'Remboursement admin' }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setRefundMessage({ type: 'success', text: `Remboursement de ${amount.toFixed(2)}€ effectué` });
+                fetchTreasury();
+            } else {
+                setRefundMessage({ type: 'error', text: data.error || 'Erreur lors du remboursement' });
+            }
+        } catch {
+            setRefundMessage({ type: 'error', text: 'Erreur de connexion' });
+        } finally {
+            setRefundingId(null);
         }
     };
 
@@ -238,6 +266,15 @@ export default function AdminTreasuryPage() {
                             ))}
                         </div>
 
+                        {/* Message de remboursement */}
+                        {refundMessage && (
+                            <div className={`mb-4 px-5 py-3 rounded-xl text-sm font-medium flex items-center gap-2 ${refundMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                {refundMessage.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                                {refundMessage.text}
+                                <button onClick={() => setRefundMessage(null)} className="ml-auto text-xs opacity-60 hover:opacity-100">✕</button>
+                            </div>
+                        )}
+
                         {/* Tab: Paiements */}
                         {activeTab === 'payments' && (
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -262,6 +299,7 @@ export default function AdminTreasuryPage() {
                                                     <th className="text-right px-5 py-3 font-semibold hidden lg:table-cell">Frais Stripe</th>
                                                     <th className="text-right px-5 py-3 font-semibold hidden lg:table-cell">Créateur</th>
                                                     <th className="text-center px-5 py-3 font-semibold">Statut</th>
+                                                    <th className="text-center px-5 py-3 font-semibold">Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-50">
@@ -287,6 +325,26 @@ export default function AdminTreasuryPage() {
                                                                     {status.label}
                                                                 </span>
                                                             </td>
+                                                            <td className="px-5 py-3 text-center">
+                                                                {m.status === 'SUCCEEDED' && !m.refundedAt ? (
+                                                                    <button
+                                                                        onClick={() => handleRefund(m.id, m.eventTitle, m.amount)}
+                                                                        disabled={refundingId === m.id}
+                                                                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        {refundingId === m.id ? (
+                                                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                                                        ) : (
+                                                                            <RotateCcw className="h-3 w-3" />
+                                                                        )}
+                                                                        Rembourser
+                                                                    </button>
+                                                                ) : m.status === 'REFUNDED' ? (
+                                                                    <span className="text-xs text-gray-400">Remboursé</span>
+                                                                ) : (
+                                                                    <span className="text-xs text-gray-300">—</span>
+                                                                )}
+                                                            </td>
                                                         </tr>
                                                     );
                                                 })}
@@ -308,6 +366,9 @@ export default function AdminTreasuryPage() {
                                                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-500 bg-gray-100">
                                                                 Legacy
                                                             </span>
+                                                        </td>
+                                                        <td className="px-5 py-3 text-center">
+                                                            <span className="text-xs text-gray-300">—</span>
                                                         </td>
                                                     </tr>
                                                 ))}

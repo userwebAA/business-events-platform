@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Vérifier les droits : admin ou créateur de l'événement
-        const isAdmin = userRole === 'ADMIN';
+        const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
         const isOrganizer = payment.organizerId === userId;
 
         if (!isAdmin && !isOrganizer) {
