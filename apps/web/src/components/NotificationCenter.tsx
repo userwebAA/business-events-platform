@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Bell, X, Check, Trash2 } from 'lucide-react';
+import { Bell, X, Check, Trash2, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Notification {
     id: string;
@@ -16,10 +17,12 @@ interface Notification {
 
 export default function NotificationCenter() {
     const router = useRouter();
+    const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [followedBack, setFollowedBack] = useState<Set<string>>(new Set());
 
     const fetchNotifications = useCallback(async () => {
         setLoading(true);
@@ -198,7 +201,7 @@ export default function NotificationCenter() {
             >
                 <Bell className="h-6 w-6" />
                 {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                    <span className="absolute -top-1 -right-1 min-w-5 h-5 flex items-center justify-center px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
                         {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                 )}
@@ -275,6 +278,30 @@ export default function NotificationCenter() {
                                                     <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                                                         {notification.message}
                                                     </p>
+                                                    {notification.type === 'NEW_FOLLOWER' && notification.link && (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const followUserId = notification.link!.split('/profile/')[1];
+                                                                if (!followUserId || followedBack.has(notification.id)) return;
+                                                                const token = localStorage.getItem('token');
+                                                                fetch(`/api/user/${followUserId}/follow`, {
+                                                                    method: 'POST',
+                                                                    headers: { 'Authorization': `Bearer ${token}` },
+                                                                }).then(res => {
+                                                                    if (res.ok) setFollowedBack(prev => new Set(prev).add(notification.id));
+                                                                });
+                                                            }}
+                                                            disabled={followedBack.has(notification.id)}
+                                                            className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${followedBack.has(notification.id)
+                                                                    ? 'bg-sky-50 text-sky-600 border border-sky-200'
+                                                                    : 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm'
+                                                                }`}
+                                                        >
+                                                            <UserPlus className="h-3 w-3" />
+                                                            {followedBack.has(notification.id) ? 'Suivi !' : 'Suivre en retour'}
+                                                        </button>
+                                                    )}
                                                     <p className="text-xs text-gray-400 mt-2">
                                                         {formatDate(notification.createdAt)}
                                                     </p>
