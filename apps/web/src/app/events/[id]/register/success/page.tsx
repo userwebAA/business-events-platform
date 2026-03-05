@@ -186,17 +186,39 @@ export default function RegistrationSuccessPage() {
                                                 ) : fullAddress ? (
                                                     <div className="mt-2">
                                                         <p className="text-sm text-gray-600 mb-2">{fullAddress}</p>
-                                                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                                            <p className="text-xs text-green-800 font-medium">
-                                                                ✅ Adresse complète révélée après inscription
-                                                            </p>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                                                <p className="text-xs text-green-800 font-medium">
+                                                                    ✅ Adresse complète révélée après inscription
+                                                                </p>
+                                                            </div>
+                                                            <a
+                                                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress + ', ' + event.location)}`}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                                            >
+                                                                <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                                                                <span className="text-xs text-blue-700 font-bold">Ouvrir dans Google Maps</span>
+                                                            </a>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <p className="text-sm text-gray-600">{event.address}</p>
                                                 )
                                             ) : (
-                                                <p className="text-sm text-gray-600">{event.address}</p>
+                                                <div className="mt-1">
+                                                    <p className="text-sm text-gray-600">{event.address}</p>
+                                                    <a
+                                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address + ', ' + event.location)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1.5 mt-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                                    >
+                                                        <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                                                        <span className="text-xs text-blue-700 font-bold">Ouvrir dans Google Maps</span>
+                                                    </a>
+                                                </div>
                                             )}
                                         </div>
                                     </div>

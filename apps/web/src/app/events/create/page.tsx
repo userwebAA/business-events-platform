@@ -13,6 +13,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { fr } from 'date-fns/locale';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
+import { FRENCH_CITIES } from '@/lib/frenchCities';
 
 export default function CreateEventPage() {
     const router = useRouter();
@@ -30,6 +31,9 @@ export default function CreateEventPage() {
     const [myPastEvents, setMyPastEvents] = useState<any[]>([]);
     const [showDuplicateSelector, setShowDuplicateSelector] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
+    const [cityQuery, setCityQuery] = useState('');
+    const [citySuggestions, setCitySuggestions] = useState<string[]>([]);
+    const [showCitySuggestions, setShowCitySuggestions] = useState(false);
 
     // Vérifier le statut d'identité
     useEffect(() => {
@@ -518,43 +522,109 @@ export default function CreateEventPage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
+                            <div className="relative">
                                 <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                                     <MapPin className="h-4 w-4 text-purple-500" />
-                                    Ville + Code Postal *
+                                    Ville *
                                 </label>
                                 <input
-                                    {...register('location')}
                                     type="text"
+                                    value={cityQuery}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setCityQuery(val);
+                                        if (val.length >= 2) {
+                                            const filtered = FRENCH_CITIES.filter(c =>
+                                                c.toLowerCase().startsWith(val.toLowerCase())
+                                            ).slice(0, 8);
+                                            setCitySuggestions(filtered);
+                                            setShowCitySuggestions(filtered.length > 0);
+                                        } else {
+                                            setCitySuggestions([]);
+                                            setShowCitySuggestions(false);
+                                        }
+                                        setValue('location', val + (watch('location')?.includes(' ') ? ' ' + watch('location')?.split(' ').pop() : ''));
+                                    }}
+                                    onFocus={() => {
+                                        if (citySuggestions.length > 0) setShowCitySuggestions(true);
+                                    }}
+                                    onBlur={() => {
+                                        setTimeout(() => setShowCitySuggestions(false), 200);
+                                    }}
                                     className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium placeholder-gray-400 transition-all hover:border-gray-300"
-                                    placeholder="Ex: Toulouse 31000"
+                                    placeholder="Ex: Toulouse"
                                 />
+                                {showCitySuggestions && citySuggestions.length > 0 && (
+                                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                                        {citySuggestions.map((city) => (
+                                            <button
+                                                key={city}
+                                                type="button"
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={() => {
+                                                    setCityQuery(city);
+                                                    setShowCitySuggestions(false);
+                                                    const zipCode = watch('location')?.match(/\d{5}/)?.[0] || '';
+                                                    setValue('location', zipCode ? `${city} ${zipCode}` : city);
+                                                }}
+                                                className="w-full text-left px-4 py-2.5 hover:bg-sky-50 text-gray-900 font-medium text-sm transition-colors flex items-center gap-2"
+                                            >
+                                                <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                                                {city}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                                 <p className="mt-1.5 text-xs text-gray-400">
                                     Visible publiquement
                                 </p>
                                 {errors.location && (
                                     <p className="mt-1 text-sm text-red-600 font-medium">{errors.location.message}</p>
                                 )}
+                                <input type="hidden" {...register('location')} />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-emerald-500" />
-                                    Adresse complète *
+                                    <MapPin className="h-4 w-4 text-blue-500" />
+                                    Code Postal *
                                 </label>
                                 <input
-                                    {...register('address')}
                                     type="text"
+                                    maxLength={5}
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    onChange={(e) => {
+                                        const zip = e.target.value.replace(/\D/g, '').slice(0, 5);
+                                        e.target.value = zip;
+                                        setValue('location', cityQuery ? `${cityQuery} ${zip}` : zip);
+                                    }}
                                     className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium placeholder-gray-400 transition-all hover:border-gray-300"
-                                    placeholder="123 Rue de la République"
+                                    placeholder="Ex: 31000"
                                 />
                                 <p className="mt-1.5 text-xs text-gray-400">
-                                    Révélée après inscription (payant)
+                                    Visible publiquement
                                 </p>
-                                {errors.address && (
-                                    <p className="mt-1 text-sm text-red-600 font-medium">{errors.address.message}</p>
-                                )}
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-emerald-500" />
+                                Adresse complète *
+                            </label>
+                            <input
+                                {...register('address')}
+                                type="text"
+                                className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium placeholder-gray-400 transition-all hover:border-gray-300"
+                                placeholder="123 Rue de la République"
+                            />
+                            <p className="mt-1.5 text-xs text-gray-400">
+                                Révélée après inscription uniquement
+                            </p>
+                            {errors.address && (
+                                <p className="mt-1 text-sm text-red-600 font-medium">{errors.address.message}</p>
+                            )}
                         </div>
 
                         <div>

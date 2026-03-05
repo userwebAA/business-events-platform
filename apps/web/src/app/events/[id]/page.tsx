@@ -314,7 +314,18 @@ export default function EventDetailPage() {
                                     <p className="text-sm text-gray-500 font-medium">Lieu</p>
                                     <p className="text-gray-900 font-bold">{event.location}</p>
                                     {event.type === 'free' ? (
-                                        <p className="text-sm text-gray-500 mt-0.5">{event.address}</p>
+                                        <div className="mt-1">
+                                            <p className="text-sm text-gray-500">{event.address}</p>
+                                            <a
+                                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.address + ', ' + event.location)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                            >
+                                                <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                                                <span className="text-xs text-blue-700 font-bold">Ouvrir dans Google Maps</span>
+                                            </a>
+                                        </div>
                                     ) : isRegistered ? (
                                         loadingAddress ? (
                                             <div className="flex items-center gap-2 mt-1">
@@ -324,9 +335,20 @@ export default function EventDetailPage() {
                                         ) : fullAddress ? (
                                             <div className="mt-1">
                                                 <p className="text-sm text-gray-500">{fullAddress}</p>
-                                                <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                                    <Check className="h-3.5 w-3.5 text-emerald-600" />
-                                                    <span className="text-xs text-emerald-700 font-bold">Adresse débloquée</span>
+                                                <div className="flex flex-wrap items-center gap-2 mt-2">
+                                                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                                        <span className="text-xs text-emerald-700 font-bold">Adresse débloquée</span>
+                                                    </div>
+                                                    <a
+                                                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress + ', ' + event.location)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                                                    >
+                                                        <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                                                        <span className="text-xs text-blue-700 font-bold">Ouvrir dans Google Maps</span>
+                                                    </a>
                                                 </div>
                                             </div>
                                         ) : (
