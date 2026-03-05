@@ -26,7 +26,17 @@ export async function POST(request: NextRequest) {
         // Vérifier si le compte existant est valide
         if (stripeAccountId) {
             try {
-                await stripe.accounts.retrieve(stripeAccountId);
+                const existingAccount = await stripe.accounts.retrieve(stripeAccountId);
+                // Si le compte est rejeté, on le reset automatiquement
+                const disabledReason = existingAccount.requirements?.disabled_reason;
+                if (disabledReason && disabledReason.includes('rejected')) {
+                    console.log('Stripe account rejected, resetting:', stripeAccountId);
+                    stripeAccountId = null;
+                    await prisma.user.update({
+                        where: { id: userId },
+                        data: { stripeAccountId: null, stripeOnboardingComplete: false },
+                    });
+                }
             } catch (e: any) {
                 console.log('Existing Stripe account invalid, resetting:', e?.message);
                 stripeAccountId = null;

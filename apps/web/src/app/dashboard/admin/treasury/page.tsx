@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
     ArrowLeft, Euro, Users, Calendar, TrendingUp,
     Loader2, ChevronDown, ChevronUp, User, CreditCard,
-    Clock, CheckCircle, AlertCircle, ArrowDownRight, ArrowUpRight, Banknote, RotateCcw
+    Clock, CheckCircle, AlertCircle, ArrowDownRight, ArrowUpRight, Banknote, RotateCcw, Trash2, Unlink, RefreshCw
 } from 'lucide-react';
 
 interface StripeMovement {
@@ -75,6 +75,19 @@ interface OrganizerStat {
     stripeReady: boolean;
 }
 
+interface StripeAccount {
+    id: string;
+    name: string | null;
+    displayName: string;
+    email: string;
+    stripeAccountId: string | null;
+    stripeOnboardingComplete: boolean;
+    stripeStatus: 'active' | 'pending' | 'rejected' | 'restricted' | 'invalid' | 'unknown';
+    chargesEnabled: boolean;
+    payoutsEnabled: boolean;
+    disabledReason: string | null;
+}
+
 interface Summary {
     totalRevenue: number;
     totalStripeRevenue: number;
@@ -105,12 +118,16 @@ export default function AdminTreasuryPage() {
     const [expandedOrganizer, setExpandedOrganizer] = useState<string | null>(null);
     const [refundingId, setRefundingId] = useState<string | null>(null);
     const [refundMessage, setRefundMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [stripeAccounts, setStripeAccounts] = useState<StripeAccount[]>([]);
+    const [stripeActionLoading, setStripeActionLoading] = useState<string | null>(null);
+    const [stripeMessage, setStripeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
     useEffect(() => {
         if (!isAdmin) return;
         fetchTreasury();
+        fetchStripeAccounts();
     }, [isAdmin]);
 
     const fetchTreasury = async () => {
@@ -131,6 +148,60 @@ export default function AdminTreasuryPage() {
             console.error('Error fetching treasury:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchStripeAccounts = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/admin/stripe-accounts', {
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setStripeAccounts(data);
+            }
+        } catch (error) {
+            console.error('Error fetching stripe accounts:', error);
+        }
+    };
+
+    const handleStripeAction = async (userId: string, action: 'reset' | 'unlink', userName: string) => {
+        const actionLabel = action === 'reset' ? 'Réinitialiser (supprimer sur Stripe + délier)' : 'Délier le compte (garder sur Stripe)';
+        if (!confirm(`${actionLabel} pour ${userName} ?`)) return;
+
+        setStripeActionLoading(`${userId}-${action}`);
+        setStripeMessage(null);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/admin/stripe-accounts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ userId, action }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setStripeMessage({ type: 'success', text: data.message });
+                fetchStripeAccounts();
+                fetchTreasury();
+            } else {
+                setStripeMessage({ type: 'error', text: data.error || 'Erreur' });
+            }
+        } catch {
+            setStripeMessage({ type: 'error', text: 'Erreur de connexion' });
+        } finally {
+            setStripeActionLoading(null);
+        }
+    };
+
+    const getStripeStatusBadge = (status: string) => {
+        switch (status) {
+            case 'active': return { label: 'Actif', color: 'text-emerald-600 bg-emerald-50' };
+            case 'pending': return { label: 'En attente', color: 'text-amber-600 bg-amber-50' };
+            case 'rejected': return { label: 'Rejeté', color: 'text-red-600 bg-red-50' };
+            case 'restricted': return { label: 'Restreint', color: 'text-orange-600 bg-orange-50' };
+            case 'invalid': return { label: 'Invalide', color: 'text-gray-600 bg-gray-100' };
+            default: return { label: 'Inconnu', color: 'text-gray-500 bg-gray-50' };
         }
     };
 
@@ -436,91 +507,175 @@ export default function AdminTreasuryPage() {
 
                         {/* Tab: Organisateurs */}
                         {activeTab === 'organizers' && (
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                                <div className="p-5 sm:p-6 border-b border-gray-100">
-                                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                        <User className="h-5 w-5 text-sky-500" />
-                                        Recettes par organisateur
-                                    </h2>
-                                </div>
-                                {organizerStats.length === 0 ? (
-                                    <div className="text-center py-12 text-gray-500 text-sm">Aucun organisateur</div>
-                                ) : (
-                                    <div className="divide-y divide-gray-50">
-                                        {organizerStats.map((org) => (
-                                            <div key={org.id}>
-                                                <button
-                                                    onClick={() => setExpandedOrganizer(expandedOrganizer === org.id ? null : org.id)}
-                                                    className="w-full flex items-center justify-between px-5 sm:px-6 py-4 hover:bg-sky-50/50 transition-colors"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                                            {org.name.charAt(0).toUpperCase()}
-                                                        </div>
-                                                        <div className="text-left">
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="font-semibold text-gray-900 text-sm">{org.name}</p>
-                                                                {org.stripeReady ? (
-                                                                    <span className="text-xs px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded font-medium">Stripe ✓</span>
-                                                                ) : (
-                                                                    <span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-500 rounded font-medium">Pas Stripe</span>
+                            <>
+                                {/* Gestion comptes Stripe Connect */}
+                                {stripeAccounts.length > 0 && (
+                                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                                        <div className="p-5 sm:p-6 border-b border-gray-100 flex items-center justify-between">
+                                            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                                <CreditCard className="h-5 w-5 text-violet-500" />
+                                                Comptes Stripe Connect
+                                            </h2>
+                                            <button onClick={() => fetchStripeAccounts()} className="text-xs text-sky-600 hover:text-sky-700 flex items-center gap-1">
+                                                <RefreshCw className="h-3 w-3" /> Actualiser
+                                            </button>
+                                        </div>
+
+                                        {stripeMessage && (
+                                            <div className={`mx-5 mt-4 px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 ${stripeMessage.type === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                                {stripeMessage.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                                                {stripeMessage.text}
+                                                <button onClick={() => setStripeMessage(null)} className="ml-auto text-xs opacity-60 hover:opacity-100">✕</button>
+                                            </div>
+                                        )}
+
+                                        <div className="divide-y divide-gray-50">
+                                            {stripeAccounts.map((acc) => {
+                                                const badge = getStripeStatusBadge(acc.stripeStatus);
+                                                return (
+                                                    <div key={acc.id} className="px-5 sm:px-6 py-4 flex items-center justify-between gap-3">
+                                                        <div className="flex items-center gap-3 min-w-0">
+                                                            <div className="w-10 h-10 bg-gradient-to-br from-violet-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
+                                                                {acc.displayName.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <p className="font-semibold text-gray-900 text-sm truncate">{acc.displayName}</p>
+                                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${badge.color}`}>
+                                                                        {badge.label}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-xs text-gray-500 truncate">{acc.email}</p>
+                                                                {acc.stripeAccountId && (
+                                                                    <p className="text-xs text-gray-400 font-mono truncate">{acc.stripeAccountId}</p>
+                                                                )}
+                                                                {acc.disabledReason && (
+                                                                    <p className="text-xs text-red-500 mt-0.5">{acc.disabledReason}</p>
                                                                 )}
                                                             </div>
-                                                            <p className="text-xs text-gray-500">{org.email} · {org.paymentCount} paiement{org.paymentCount > 1 ? 's' : ''}</p>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <button
+                                                                onClick={() => handleStripeAction(acc.id, 'reset', acc.displayName)}
+                                                                disabled={stripeActionLoading === `${acc.id}-reset`}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                                                title="Supprimer le compte sur Stripe + délier"
+                                                            >
+                                                                {stripeActionLoading === `${acc.id}-reset` ? (
+                                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                                ) : (
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                )}
+                                                                Reset
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleStripeAction(acc.id, 'unlink', acc.displayName)}
+                                                                disabled={stripeActionLoading === `${acc.id}-unlink`}
+                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                                                                title="Délier le compte sans supprimer sur Stripe"
+                                                            >
+                                                                {stripeActionLoading === `${acc.id}-unlink` ? (
+                                                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                                                ) : (
+                                                                    <Unlink className="h-3 w-3" />
+                                                                )}
+                                                                Délier
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="text-right hidden sm:block">
-                                                            <p className="text-xs text-gray-400">Commission</p>
-                                                            <p className="text-sm font-bold text-violet-600">{org.platformFees.toFixed(2)}€</p>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="text-xs text-gray-400">Créateur (net)</p>
-                                                            <p className="text-lg font-bold text-emerald-600">{(org.creatorAmount - stripeMovements.filter(m => m.organizerId === org.id && m.status === 'SUCCEEDED').reduce((sum, m) => sum + m.stripeFee, 0)).toFixed(2)}€</p>
-                                                        </div>
-                                                        {expandedOrganizer === org.id ? (
-                                                            <ChevronUp className="h-4 w-4 text-gray-400" />
-                                                        ) : (
-                                                            <ChevronDown className="h-4 w-4 text-gray-400" />
-                                                        )}
-                                                    </div>
-                                                </button>
-                                                {expandedOrganizer === org.id && (
-                                                    <div className="bg-gray-50 px-5 sm:px-6 py-3 space-y-2">
-                                                        {stripeMovements
-                                                            .filter(m => m.organizerId === org.id)
-                                                            .map(m => {
-                                                                const status = getPayoutStatus(m);
-                                                                const StatusIcon = status.icon;
-                                                                return (
-                                                                    <div key={m.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100">
-                                                                        {m.eventImage ? (
-                                                                            <img src={m.eventImage} alt={m.eventTitle} className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                                                                        ) : (
-                                                                            <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center shrink-0">
-                                                                                <Calendar className="h-5 w-5 text-sky-500" />
-                                                                            </div>
-                                                                        )}
-                                                                        <div className="flex-1 min-w-0">
-                                                                            <p className="text-sm font-semibold text-gray-900 truncate">{m.eventTitle}</p>
-                                                                            <p className="text-xs text-gray-500">{new Date(m.createdAt).toLocaleDateString('fr-FR')} · {m.amount.toFixed(2)}€</p>
-                                                                        </div>
-                                                                        <div className="text-right shrink-0">
-                                                                            <p className="text-sm font-bold text-emerald-600">{(m.creatorAmount - m.stripeFee).toFixed(2)}€</p>
-                                                                            <span className={`inline-flex items-center gap-1 text-xs font-medium ${status.color} px-1.5 py-0.5 rounded`}>
-                                                                                <StatusIcon className="h-3 w-3" />{status.label}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
+                                                );
+                                            })}
+                                        </div>
                                     </div>
                                 )}
-                            </div>
+
+                                {/* Recettes par organisateur */}
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div className="p-5 sm:p-6 border-b border-gray-100">
+                                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                            <User className="h-5 w-5 text-sky-500" />
+                                            Recettes par organisateur
+                                        </h2>
+                                    </div>
+                                    {organizerStats.length === 0 ? (
+                                        <div className="text-center py-12 text-gray-500 text-sm">Aucun organisateur</div>
+                                    ) : (
+                                        <div className="divide-y divide-gray-50">
+                                            {organizerStats.map((org) => (
+                                                <div key={org.id}>
+                                                    <button
+                                                        onClick={() => setExpandedOrganizer(expandedOrganizer === org.id ? null : org.id)}
+                                                        className="w-full flex items-center justify-between px-5 sm:px-6 py-4 hover:bg-sky-50/50 transition-colors"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                                                                {org.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                            <div className="text-left">
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="font-semibold text-gray-900 text-sm">{org.name}</p>
+                                                                    {org.stripeReady ? (
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded font-medium">Stripe ✓</span>
+                                                                    ) : (
+                                                                        <span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-500 rounded font-medium">Pas Stripe</span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-xs text-gray-500">{org.email} · {org.paymentCount} paiement{org.paymentCount > 1 ? 's' : ''}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="text-right hidden sm:block">
+                                                                <p className="text-xs text-gray-400">Commission</p>
+                                                                <p className="text-sm font-bold text-violet-600">{org.platformFees.toFixed(2)}€</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-xs text-gray-400">Créateur (net)</p>
+                                                                <p className="text-lg font-bold text-emerald-600">{(org.creatorAmount - stripeMovements.filter(m => m.organizerId === org.id && m.status === 'SUCCEEDED').reduce((sum, m) => sum + m.stripeFee, 0)).toFixed(2)}€</p>
+                                                            </div>
+                                                            {expandedOrganizer === org.id ? (
+                                                                <ChevronUp className="h-4 w-4 text-gray-400" />
+                                                            ) : (
+                                                                <ChevronDown className="h-4 w-4 text-gray-400" />
+                                                            )}
+                                                        </div>
+                                                    </button>
+                                                    {expandedOrganizer === org.id && (
+                                                        <div className="bg-gray-50 px-5 sm:px-6 py-3 space-y-2">
+                                                            {stripeMovements
+                                                                .filter(m => m.organizerId === org.id)
+                                                                .map(m => {
+                                                                    const status = getPayoutStatus(m);
+                                                                    const StatusIcon = status.icon;
+                                                                    return (
+                                                                        <div key={m.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100">
+                                                                            {m.eventImage ? (
+                                                                                <img src={m.eventImage} alt={m.eventTitle} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                                                                            ) : (
+                                                                                <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center shrink-0">
+                                                                                    <Calendar className="h-5 w-5 text-sky-500" />
+                                                                                </div>
+                                                                            )}
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <p className="text-sm font-semibold text-gray-900 truncate">{m.eventTitle}</p>
+                                                                                <p className="text-xs text-gray-500">{new Date(m.createdAt).toLocaleDateString('fr-FR')} · {m.amount.toFixed(2)}€</p>
+                                                                            </div>
+                                                                            <div className="text-right shrink-0">
+                                                                                <p className="text-sm font-bold text-emerald-600">{(m.creatorAmount - m.stripeFee).toFixed(2)}€</p>
+                                                                                <span className={`inline-flex items-center gap-1 text-xs font-medium ${status.color} px-1.5 py-0.5 rounded`}>
+                                                                                    <StatusIcon className="h-3 w-3" />{status.label}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
                         )}
                     </>
                 )}
