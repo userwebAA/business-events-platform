@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { generateInvoiceNumber } from '@/lib/invoiceGenerator';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { createInvoiceDocument } from '@/lib/pdfInvoice';
+import { generateQRCodeImage } from '@/lib/ticketService';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,10 +14,13 @@ export async function GET(
   try {
     const registrationId = params.id;
 
-    // Récupérer l'inscription avec l'événement
+    // Récupérer l'inscription avec l'événement et le ticket
     const registration = await prisma.registration.findUnique({
       where: { id: registrationId },
-      include: { event: true }
+      include: {
+        event: true,
+        ticket: true
+      }
     });
 
     if (!registration) {
@@ -47,6 +51,16 @@ export async function GET(
     // Générer la facture PDF
     const invoiceNumber = generateInvoiceNumber(registration.id, registration.createdAt);
 
+    // Générer le QR code si un ticket existe
+    let qrCodeDataURL: string | undefined;
+    if (registration.ticket?.qrCode) {
+      try {
+        qrCodeDataURL = await generateQRCodeImage(registration.ticket.qrCode);
+      } catch (error) {
+        console.error('Erreur génération QR code pour facture:', error);
+      }
+    }
+
     const invoiceData = {
       invoiceNumber,
       date: registration.createdAt,
@@ -58,7 +72,8 @@ export async function GET(
       price: registration.event.price,
       quantity: (registration as any).quantity || 1,
       currency: registration.event.currency || 'EUR',
-      registrationId: registration.id
+      registrationId: registration.id,
+      qrCode: qrCodeDataURL
     };
 
     // Générer le PDF avec @react-pdf/renderer

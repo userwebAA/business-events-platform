@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
     page: {
@@ -111,6 +111,7 @@ interface InvoiceData {
     quantity?: number;
     currency: string;
     registrationId: string;
+    qrCode?: string;
 }
 
 const formatDate = (date: Date) => {
@@ -193,6 +194,15 @@ export const createInvoiceDocument = (data: InvoiceData) => {
                     <Text style={styles.totalLabel}>TOTAL:</Text>
                     <Text style={styles.totalValue}>{formatCurrency(data.price * (data.quantity || 1), data.currency)}</Text>
                 </View>
+
+                {/* QR Code si disponible */}
+                {data.qrCode && (
+                    <View style={{ marginTop: 20, alignItems: 'center' }}>
+                        <Text style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 10, color: '#333' }}>Billet d'accès</Text>
+                        <Image src={data.qrCode} style={{ width: 120, height: 120 }} />
+                        <Text style={{ fontSize: 8, color: '#666', marginTop: 8, textAlign: 'center' }}>Présentez ce QR code à l'entrée de l'événement</Text>
+                    </View>
+                )}
 
                 {/* Footer */}
                 <View style={styles.footer}>

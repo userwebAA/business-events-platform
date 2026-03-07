@@ -149,7 +149,7 @@ export default function Home() {
     };
 
     return (
-        <div className="min-h-screen">
+        <div className="min-h-screen bg-white">
             {/* Hero Section - Full Screen */}
             <div className="relative min-h-screen bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 overflow-hidden">
                 {/* Animated Background Elements */}
