@@ -150,7 +150,8 @@ export default function EventsPage() {
                 e.description?.toLowerCase().includes(q)
             );
         }
-        return result;
+        // Trier les événements en vedette en premier
+        return result.sort((a, b) => ((b as any).isFeatured ? 1 : 0) - ((a as any).isFeatured ? 1 : 0));
     }, [filter, locationFilter, searchQuery]);
 
     useEffect(() => {
