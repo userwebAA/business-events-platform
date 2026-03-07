@@ -314,16 +314,16 @@ export default function Home() {
             {/* PWA Install Section */}
             {showInstallButton && (
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-8 relative z-20 mb-16">
-                    <div className="relative rounded-3xl shadow-2xl overflow-hidden border border-gray-800/50">
-                        {/* Fond dégradé sombre moderne */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-slate-900 to-gray-950"></div>
+                    <div className="relative rounded-3xl shadow-2xl overflow-hidden border border-sky-200/50">
+                        {/* Fond dégradé clair moderne */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-white via-sky-50 to-blue-50"></div>
 
                         {/* Effets lumineux */}
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-sky-500/20 via-blue-500/10 to-transparent rounded-full blur-3xl"></div>
-                        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-purple-500/20 via-violet-500/10 to-transparent rounded-full blur-3xl"></div>
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-sky-400/20 via-blue-400/10 to-transparent rounded-full blur-3xl"></div>
+                        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-purple-400/15 via-violet-400/10 to-transparent rounded-full blur-3xl"></div>
 
                         {/* Grille de fond subtile */}
-                        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+                        <div className="absolute inset-0 bg-[linear-gradient(rgba(14,165,233,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(14,165,233,0.03)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
 
                         <div className="relative z-10 p-6 sm:p-8 md:p-10">
                             <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
@@ -337,10 +337,10 @@ export default function Home() {
 
                                 {/* Texte */}
                                 <div className="flex-1 text-center md:text-left">
-                                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                                         Installez l'application TAFF Events
                                     </h2>
-                                    <p className="text-gray-300 text-sm sm:text-base">
+                                    <p className="text-gray-600 text-sm sm:text-base">
                                         Accès instantané, notifications en temps réel et mode hors ligne
                                     </p>
                                 </div>
