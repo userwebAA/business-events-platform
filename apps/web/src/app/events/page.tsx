@@ -60,7 +60,8 @@ export default function EventsPage() {
             const now = new Date();
             const mapped = data
                 .map((e: any) => ({ ...e, date: new Date(e.date) }))
-                .filter((e: Event) => new Date(e.date) > now);
+                .filter((e: Event) => new Date(e.date) > now)
+                .sort((a, b) => ((b as any).isFeatured ? 1 : 0) - ((a as any).isFeatured ? 1 : 0));
             allEventsCache.current = mapped;
             setEvents(mapped);
         } catch (error) {
@@ -85,6 +86,7 @@ export default function EventsPage() {
                         registrations
                             .map((r: any) => ({ ...r.event, date: new Date(r.event.date), registrationId: r.id }))
                             .filter((e: Event) => new Date(e.date) > now)
+                            .sort((a, b) => ((b as any).isFeatured ? 1 : 0) - ((a as any).isFeatured ? 1 : 0))
                     );
                     return;
                 }
@@ -100,6 +102,7 @@ export default function EventsPage() {
                     eventsData
                         .map((e: any) => ({ ...e, date: new Date(e.date) }))
                         .filter((e: Event) => new Date(e.date) > now)
+                        .sort((a, b) => ((b as any).isFeatured ? 1 : 0) - ((a as any).isFeatured ? 1 : 0))
                 );
             }
         } catch (error) {
@@ -121,6 +124,7 @@ export default function EventsPage() {
                     data
                         .map((e: any) => ({ ...e, date: new Date(e.date) }))
                         .filter((e: Event) => new Date(e.date) > now)
+                        .sort((a, b) => ((b as any).isFeatured ? 1 : 0) - ((a as any).isFeatured ? 1 : 0))
                 );
             }
         } catch (error) {
