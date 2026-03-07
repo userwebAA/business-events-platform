@@ -8,16 +8,19 @@ export async function POST(
     { params }: { params: { id: string } }
 ) {
     try {
+        const body = await request.json();
+        const quantity = body.quantity || 1;
+
         const event = await prisma.event.update({
             where: { id: params.id },
             data: {
                 currentAttendees: {
-                    increment: 1,
+                    increment: quantity,
                 },
             },
         });
 
-        console.log('✅ Participants incrémentés:', event.currentAttendees);
+        console.log(`✅ ${quantity} participant(s) incrémenté(s):`, event.currentAttendees);
         return NextResponse.json(event);
     } catch (error) {
         console.error('❌ Erreur incrémentation:', error);

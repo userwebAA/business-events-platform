@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, ArrowLeft, CreditCard, User, Mail, Phone, Building } from 'lucide-react';
+import { Calendar, ArrowLeft, CreditCard, User, Mail, Phone, Building, Users } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Event, RegistrationField } from 'shared';
 import { useForm } from 'react-hook-form';
@@ -15,6 +15,7 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [quantity, setQuantity] = useState(1);
 
     const {
         register,
@@ -63,6 +64,7 @@ export default function RegisterPage() {
                     body: JSON.stringify({
                         eventId: params.id,
                         formData: data,
+                        quantity,
                     }),
                 });
 
@@ -99,6 +101,7 @@ export default function RegisterPage() {
                 body: JSON.stringify({
                     eventId: params.id,
                     formData: data,
+                    quantity,
                 }),
             });
 
@@ -108,6 +111,8 @@ export default function RegisterPage() {
                 // Incrémenter le nombre de participants
                 await fetch(`/api/events/${params.id}/increment`, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quantity }),
                 });
 
                 // Sauvegarder l'email pour la page de confirmation
@@ -208,14 +213,62 @@ export default function RegisterPage() {
                         <p className="text-xl text-gray-700 font-medium">{event.title}</p>
                     </div>
 
-                    {event.type === 'paid' && (
-                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-5 mb-8 flex items-center gap-4 shadow-sm">
-                            <div className="bg-blue-100 p-3 rounded-lg">
-                                <CreditCard className="h-6 w-6 text-blue-600" />
+                    {/* Sélecteur de quantité */}
+                    <div className="bg-gradient-to-r from-sky-50 to-blue-50 border-2 border-sky-200 rounded-xl p-6 mb-8">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-sky-100 p-3 rounded-lg">
+                                    <Users className="h-6 w-6 text-sky-600" />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-sky-900 text-lg">Nombre de places</p>
+                                    <p className="text-sky-700 text-sm">Sélectionnez le nombre de tickets</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="font-bold text-blue-900 text-lg">💳 Événement payant</p>
-                                <p className="text-blue-700 font-semibold">Prix: {event.price}€</p>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                    className="w-10 h-10 rounded-lg bg-white border-2 border-sky-300 text-sky-600 font-bold hover:bg-sky-50 transition-all"
+                                >
+                                    −
+                                </button>
+                                <div className="w-16 h-10 rounded-lg bg-white border-2 border-sky-300 flex items-center justify-center font-bold text-lg text-gray-900">
+                                    {quantity}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const availablePlaces = event.maxAttendees ? event.maxAttendees - event.currentAttendees : 999;
+                                        setQuantity(Math.min(availablePlaces, quantity + 1));
+                                    }}
+                                    className="w-10 h-10 rounded-lg bg-white border-2 border-sky-300 text-sky-600 font-bold hover:bg-sky-50 transition-all"
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                        {event.maxAttendees && (
+                            <p className="text-sm text-sky-600 mt-3 text-center">
+                                Places disponibles: {event.maxAttendees - event.currentAttendees}
+                            </p>
+                        )}
+                    </div>
+
+                    {event.type === 'paid' && (
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-5 mb-8 flex items-center justify-between gap-4 shadow-sm">
+                            <div className="flex items-center gap-4">
+                                <div className="bg-blue-100 p-3 rounded-lg">
+                                    <CreditCard className="h-6 w-6 text-blue-600" />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-blue-900 text-lg">💳 Événement payant</p>
+                                    <p className="text-blue-700 font-semibold">Prix unitaire: {event.price}€</p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-sm text-blue-600">Total</p>
+                                <p className="text-2xl font-bold text-blue-900">{(event.price * quantity).toFixed(2)}€</p>
                             </div>
                         </div>
                     )}
@@ -290,7 +343,7 @@ export default function RegisterPage() {
                                     </>
                                 ) : event.type === 'paid' ? (
                                     <>
-                                        💳 Payer {event.price}€ et s'inscrire
+                                        💳 Payer {(event.price * quantity).toFixed(2)}€ et s'inscrire
                                     </>
                                 ) : (
                                     <>

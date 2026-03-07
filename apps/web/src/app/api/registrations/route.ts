@@ -17,6 +17,23 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         console.log('📦 Body reçu:', JSON.stringify(body, null, 2));
 
+        const quantity = body.quantity || 1;
+
+        // Vérifier les places disponibles
+        const event = await prisma.event.findUnique({
+            where: { id: body.eventId },
+        });
+
+        if (!event) {
+            return NextResponse.json({ error: 'Événement introuvable' }, { status: 404 });
+        }
+
+        if (event.maxAttendees && event.currentAttendees + quantity > event.maxAttendees) {
+            return NextResponse.json({
+                error: `Seulement ${event.maxAttendees - event.currentAttendees} place(s) disponible(s)`
+            }, { status: 400 });
+        }
+
         // Extraire le userId si connecté
         let userId: string | null = null;
         try {
@@ -33,6 +50,7 @@ export async function POST(request: NextRequest) {
             data: {
                 eventId: body.eventId,
                 formData: body.formData,
+                quantity,
                 ...(userId && { userId }),
             },
             include: {

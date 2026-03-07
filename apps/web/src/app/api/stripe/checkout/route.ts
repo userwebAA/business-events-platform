@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
         const userId = authResult.user.userId;
         const body = await request.json();
-        const { eventId, formData } = body;
+        const { eventId, formData, quantity = 1 } = body;
 
         if (!eventId) {
             return NextResponse.json({ error: 'eventId requis' }, { status: 400 });
@@ -50,13 +50,16 @@ export async function POST(request: NextRequest) {
         }
 
         // Vérifier places disponibles
-        if (event.maxAttendees && event.currentAttendees >= event.maxAttendees) {
-            return NextResponse.json({ error: 'Événement complet' }, { status: 400 });
+        if (event.maxAttendees && event.currentAttendees + quantity > event.maxAttendees) {
+            return NextResponse.json({
+                error: `Seulement ${event.maxAttendees - event.currentAttendees} place(s) disponible(s)`
+            }, { status: 400 });
         }
 
-        // Calculer les montants
+        // Calculer les montants (prix unitaire * quantité)
         const amountInCents = Math.round(event.price * 100);
-        const platformFeeInCents = Math.round(calculatePlatformFee(event.price) * 100);
+        const totalAmountInCents = amountInCents * quantity;
+        const platformFeeInCents = Math.round(calculatePlatformFee(event.price * quantity) * 100);
 
         const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
