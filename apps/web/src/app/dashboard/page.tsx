@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Plus, CheckCircle, Settings, TrendingUp, Euro, Clock, Lock, ChevronRight, ArrowUpRight, Eye, X, User, Shield, Sparkles, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Users, Plus, CheckCircle, Settings, TrendingUp, Euro, Clock, Lock, ChevronRight, ArrowUpRight, Eye, X, User, Shield, Sparkles, Trash2, Flame } from 'lucide-react';
 import { Event } from 'shared';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +20,7 @@ export default function DashboardPage() {
 
     const [revenue, setRevenue] = useState(0);
     const [seedLoading, setSeedLoading] = useState(false);
+    const [featureLoading, setFeatureLoading] = useState<string | null>(null);
     const [seedMessage, setSeedMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     const handleSeedCreate = async () => {
@@ -65,6 +66,31 @@ export default function DashboardPage() {
             setSeedMessage({ type: 'error', text: 'Erreur réseau' });
         } finally {
             setSeedLoading(false);
+        }
+    };
+
+    const handleToggleFeatured = async (eventId: string) => {
+        setFeatureLoading(eventId);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/admin/featured', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ eventId }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setEvents(prev => prev.map(e =>
+                    e.id === eventId ? { ...e, isFeatured: data.isFeatured } as any : e
+                ));
+            }
+        } catch (e) {
+            console.error('Erreur toggle featured:', e);
+        } finally {
+            setFeatureLoading(null);
         }
     };
 
@@ -469,8 +495,25 @@ export default function DashboardPage() {
                                         </div>
                                     </div>
 
-                                    <div className="hidden sm:flex items-center gap-2 shrink-0">
-                                        <span className="bg-sky-50 text-sky-600 px-4 py-2 rounded-lg font-semibold text-sm group-hover:bg-sky-500 group-hover:text-white transition-all flex items-center gap-1.5">
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {isAdmin && (
+                                            <button
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleToggleFeatured(event.id); }}
+                                                disabled={featureLoading === event.id}
+                                                className={`p-2 rounded-lg transition-all ${(event as any).isFeatured
+                                                        ? 'bg-orange-100 text-orange-500 hover:bg-orange-200'
+                                                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-orange-400'
+                                                    }`}
+                                                title={(event as any).isFeatured ? 'Retirer la mise en avant' : 'Mettre en avant 🔥'}
+                                            >
+                                                {featureLoading === event.id ? (
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+                                                ) : (
+                                                    <Flame className={`h-4 w-4 ${(event as any).isFeatured ? 'animate-pulse' : ''}`} />
+                                                )}
+                                            </button>
+                                        )}
+                                        <span className="hidden sm:flex bg-sky-50 text-sky-600 px-4 py-2 rounded-lg font-semibold text-sm group-hover:bg-sky-500 group-hover:text-white transition-all items-center gap-1.5">
                                             <Eye className="h-4 w-4" />
                                             Voir
                                         </span>

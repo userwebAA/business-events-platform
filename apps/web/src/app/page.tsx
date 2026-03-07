@@ -40,9 +40,10 @@ export default function Home() {
         fetchPublicEvents();
     }, []);
 
-    const filteredPublicEvents = cityFilter
+    const filteredPublicEvents = (cityFilter
         ? publicEvents.filter(e => e.location?.toLowerCase().includes(cityFilter.toLowerCase()))
-        : publicEvents;
+        : publicEvents
+    ).sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
 
     // Reset animations quand le filtre change
     useEffect(() => {
@@ -472,9 +473,12 @@ export default function Home() {
                                         href={`/register?redirect=/events/${event.id}`}
                                         ref={(el: HTMLAnchorElement | null) => { cardsRef.current[idx] = el; }}
                                         data-idx={idx}
-                                        className={`group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-sky-200 transition-all duration-500 hover:-translate-y-1 ${visibleCards.has(idx)
+                                        className={`group bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-xl transition-all duration-500 hover:-translate-y-1 ${visibleCards.has(idx)
                                             ? 'opacity-100 translate-y-0'
                                             : 'opacity-0 translate-y-8'
+                                            } ${event.isFeatured
+                                                ? 'border-2 border-orange-300 ring-2 ring-orange-100 shadow-orange-100'
+                                                : 'border border-gray-100 hover:border-sky-200'
                                             }`}
                                     >
                                         {event.imageUrl ? (
@@ -488,15 +492,25 @@ export default function Home() {
                                                     <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm ${event.type === 'free' ? 'bg-emerald-500 bg-opacity-90 text-white' : 'bg-blue-500 bg-opacity-90 text-white'}`}>
                                                         {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
                                                     </span>
+                                                    {event.isFeatured && (
+                                                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center gap-1 animate-pulse">
+                                                            🔥 En vedette
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="h-48 bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center relative">
-                                                <Calendar className="h-16 w-16 text-sky-300" />
+                                            <div className={`h-48 flex items-center justify-center relative ${event.isFeatured ? 'bg-gradient-to-br from-orange-50 to-amber-100' : 'bg-gradient-to-br from-sky-100 to-blue-100'}`}>
+                                                <Calendar className={`h-16 w-16 ${event.isFeatured ? 'text-orange-300' : 'text-sky-300'}`} />
                                                 <div className="absolute top-3 left-3 flex gap-2">
                                                     <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md ${event.type === 'free' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'}`}>
                                                         {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
                                                     </span>
+                                                    {event.isFeatured && (
+                                                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold shadow-md bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center gap-1 animate-pulse">
+                                                            🔥 En vedette
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
