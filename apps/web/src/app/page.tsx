@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight, X, Share2, MapPin, Clock, Lock, XCircle } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { FRENCH_CITIES } from '@/lib/frenchCities'
@@ -15,6 +15,8 @@ export default function Home() {
     const [publicEvents, setPublicEvents] = useState<any[]>([]);
     const [cityFilter, setCityFilter] = useState('');
     const [eventsLoading, setEventsLoading] = useState(true);
+    const [visibleCards, setVisibleCards] = useState<Set<number>>(new Set());
+    const cardsRef = useRef<(HTMLElement | null)[]>([]);
 
     useEffect(() => {
         const fetchPublicEvents = async () => {
@@ -41,6 +43,45 @@ export default function Home() {
     const filteredPublicEvents = cityFilter
         ? publicEvents.filter(e => e.location?.toLowerCase().includes(cityFilter.toLowerCase()))
         : publicEvents;
+
+    // Reset animations quand le filtre change
+    useEffect(() => {
+        setVisibleCards(new Set());
+        cardsRef.current = [];
+    }, [cityFilter]);
+
+    // IntersectionObserver pour animations au scroll
+    useEffect(() => {
+        if (eventsLoading) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const idx = Number(entry.target.getAttribute('data-idx'));
+                        if (!isNaN(idx)) {
+                            setTimeout(() => {
+                                setVisibleCards(prev => new Set(prev).add(idx));
+                            }, idx * 120);
+                        }
+                        observer.unobserve(entry.target);
+                    }
+                });
+            },
+            { threshold: 0.1 }
+        );
+
+        // Petit délai pour laisser le DOM se rendre
+        const timer = setTimeout(() => {
+            cardsRef.current.forEach((el) => {
+                if (el) observer.observe(el);
+            });
+        }, 50);
+
+        return () => {
+            clearTimeout(timer);
+            observer.disconnect();
+        };
+    }, [filteredPublicEvents, eventsLoading]);
 
     useEffect(() => {
         const ua = navigator.userAgent || '';
@@ -425,11 +466,16 @@ export default function Home() {
                     ) : (
                         <>
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredPublicEvents.slice(0, 6).map((event) => (
+                                {filteredPublicEvents.slice(0, 6).map((event, idx) => (
                                     <Link
                                         key={event.id}
                                         href={`/register?redirect=/events/${event.id}`}
-                                        className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-sky-200 transition-all duration-200 hover:-translate-y-1"
+                                        ref={(el: HTMLAnchorElement | null) => { cardsRef.current[idx] = el; }}
+                                        data-idx={idx}
+                                        className={`group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-sky-200 transition-all duration-500 hover:-translate-y-1 ${visibleCards.has(idx)
+                                            ? 'opacity-100 translate-y-0'
+                                            : 'opacity-0 translate-y-8'
+                                            }`}
                                     >
                                         {event.imageUrl ? (
                                             <div className="h-48 bg-gray-200 overflow-hidden relative">
