@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Plus, CheckCircle, Settings, TrendingUp, Euro, Clock, Lock, ChevronRight, ArrowUpRight, Eye, X, User, Shield } from 'lucide-react';
+import { Calendar, MapPin, Users, Plus, CheckCircle, Settings, TrendingUp, Euro, Clock, Lock, ChevronRight, ArrowUpRight, Eye, X, User, Shield, Sparkles, Trash2 } from 'lucide-react';
 import { Event } from 'shared';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,6 +19,54 @@ export default function DashboardPage() {
     const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
 
     const [revenue, setRevenue] = useState(0);
+    const [seedLoading, setSeedLoading] = useState(false);
+    const [seedMessage, setSeedMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+    const handleSeedCreate = async () => {
+        setSeedLoading(true);
+        setSeedMessage(null);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/admin/seed', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSeedMessage({ type: 'success', text: data.message });
+                fetchEvents();
+            } else {
+                setSeedMessage({ type: 'error', text: data.error });
+            }
+        } catch {
+            setSeedMessage({ type: 'error', text: 'Erreur réseau' });
+        } finally {
+            setSeedLoading(false);
+        }
+    };
+
+    const handleSeedDelete = async () => {
+        setSeedLoading(true);
+        setSeedMessage(null);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/admin/seed', {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSeedMessage({ type: 'success', text: data.message });
+                fetchEvents();
+            } else {
+                setSeedMessage({ type: 'error', text: data.error });
+            }
+        } catch {
+            setSeedMessage({ type: 'error', text: 'Erreur réseau' });
+        } finally {
+            setSeedLoading(false);
+        }
+    };
 
     const fetchEvents = useCallback(async () => {
         setLoading(true);
@@ -194,7 +242,7 @@ export default function DashboardPage() {
                             <Shield className="h-5 w-5 text-sky-500" />
                             Administration
                         </h2>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                             <Link
                                 href="/dashboard/admin/identity"
                                 className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-sky-200 transition-shadow duration-200 hover:-translate-y-1"
@@ -227,6 +275,44 @@ export default function DashboardPage() {
                                 <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">Trésorerie</h3>
                                 <p className="text-xs text-gray-500 hidden sm:block">Mouvements financiers</p>
                             </Link>
+
+                            {/* Bouton Seed Démo */}
+                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                                <div className="bg-gradient-to-br from-emerald-400 to-teal-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg">
+                                    <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                </div>
+                                <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">Événements démo</h3>
+                                <p className="text-xs text-gray-500 hidden sm:block mb-3">Créer ou supprimer</p>
+                                <div className="flex gap-2 mt-2">
+                                    <button
+                                        onClick={handleSeedCreate}
+                                        disabled={seedLoading}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-500 text-white rounded-lg text-xs font-bold hover:bg-emerald-600 transition-all disabled:opacity-50"
+                                    >
+                                        {seedLoading ? (
+                                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div>
+                                        ) : (
+                                            <>
+                                                <Plus className="h-3.5 w-3.5" />
+                                                Créer
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={handleSeedDelete}
+                                        disabled={seedLoading}
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-all disabled:opacity-50"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        Suppr.
+                                    </button>
+                                </div>
+                                {seedMessage && (
+                                    <p className={`text-xs mt-2 font-medium ${seedMessage.type === 'success' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                        {seedMessage.text}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
