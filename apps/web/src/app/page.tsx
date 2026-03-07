@@ -313,30 +313,59 @@ export default function Home() {
 
             {/* PWA Install Section */}
             {showInstallButton && (
-                <div className="max-w-5xl mx-auto px-6 -mt-8 relative z-20 mb-16">
-                    <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -mr-32 -mt-32"></div>
-                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-10 rounded-full -ml-24 -mb-24"></div>
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-8 relative z-20 mb-16">
+                    <div className="relative rounded-3xl shadow-2xl overflow-hidden border border-gray-800/50">
+                        {/* Fond dégradé sombre moderne */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-slate-900 to-gray-950"></div>
 
-                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                            <div className="bg-white bg-opacity-20 p-5 rounded-2xl backdrop-blur-sm">
-                                <Smartphone className="h-14 w-14 text-white" />
+                        {/* Effets lumineux */}
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-sky-500/20 via-blue-500/10 to-transparent rounded-full blur-3xl"></div>
+                        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-purple-500/20 via-violet-500/10 to-transparent rounded-full blur-3xl"></div>
+
+                        {/* Grille de fond subtile */}
+                        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+
+                        <div className="relative z-10 p-6 sm:p-8 md:p-10">
+                            <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
+                                {/* Icône avec effet glow */}
+                                <div className="relative group">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-sky-400 to-blue-600 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                                    <div className="relative bg-gradient-to-br from-sky-500 to-blue-600 p-5 rounded-2xl shadow-xl">
+                                        <Smartphone className="h-12 w-12 sm:h-14 sm:w-14 text-white" />
+                                    </div>
+                                </div>
+
+                                {/* Texte */}
+                                <div className="flex-1 text-center md:text-left">
+                                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                                        Installez l'application TAFF Events
+                                    </h2>
+                                    <p className="text-gray-300 text-sm sm:text-base">
+                                        Accès instantané, notifications en temps réel et mode hors ligne
+                                    </p>
+                                </div>
+
+                                {/* Bouton installer modernisé */}
+                                <button
+                                    onClick={handleInstallClick}
+                                    className="group relative px-8 py-4 rounded-xl text-base sm:text-lg font-bold transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden"
+                                >
+                                    {/* Fond dégradé animé */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 transition-transform duration-300 group-hover:scale-105"></div>
+
+                                    {/* Effet de brillance au hover */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+
+                                    {/* Contenu du bouton */}
+                                    <div className="relative flex items-center gap-2.5 text-white">
+                                        <Download className="h-5 w-5 group-hover:animate-bounce" />
+                                        <span>Installer</span>
+                                    </div>
+
+                                    {/* Ombre portée */}
+                                    <div className="absolute inset-0 rounded-xl shadow-lg group-hover:shadow-2xl group-hover:shadow-sky-500/50 transition-shadow duration-300"></div>
+                                </button>
                             </div>
-                            <div className="flex-1 text-center md:text-left">
-                                <h2 className="text-2xl font-bold mb-2">
-                                    Installez l'application TAFF Events
-                                </h2>
-                                <p className="text-purple-100">
-                                    Accès instantané, notifications en temps réel et mode hors ligne
-                                </p>
-                            </div>
-                            <button
-                                onClick={handleInstallClick}
-                                className="bg-white text-purple-600 px-8 py-4 rounded-xl text-lg font-bold hover:bg-opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2 whitespace-nowrap"
-                            >
-                                <Download className="h-5 w-5" />
-                                Installer
-                            </button>
                         </div>
                     </div>
                 </div>
