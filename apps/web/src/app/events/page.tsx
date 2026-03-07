@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
+import { FRENCH_CITIES } from '@/lib/frenchCities';
 
 export default function EventsPage() {
     const { user } = useAuth();
@@ -238,18 +239,17 @@ export default function EventsPage() {
                                 />
                             </div>
                             <div className="relative md:w-72">
-                                <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                                <input
-                                    type="text"
-                                    placeholder="Ville..."
-                                    defaultValue={locationFilter}
-                                    onChange={(e) => {
-                                        const val = e.target.value;
-                                        if (debounceRef.current) clearTimeout(debounceRef.current);
-                                        debounceRef.current = setTimeout(() => setLocationFilter(val), 200);
-                                    }}
-                                    className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium placeholder-gray-400 transition-all hover:border-gray-300"
-                                />
+                                <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
+                                <select
+                                    value={locationFilter}
+                                    onChange={(e) => setLocationFilter(e.target.value)}
+                                    className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium transition-all hover:border-gray-300 bg-white appearance-none"
+                                >
+                                    <option value="">Toutes les villes</option>
+                                    {FRENCH_CITIES.map((city) => (
+                                        <option key={city} value={city}>{city}</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
 
