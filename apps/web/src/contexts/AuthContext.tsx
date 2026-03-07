@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         localStorage.setItem('token', data.token);
         // Stocker aussi dans un cookie pour le middleware
-        document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 jours
+        document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 2}`; // 2 heures
         setUser(data.user);
     };
 
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await response.json();
         localStorage.setItem('token', data.token);
         // Stocker aussi dans un cookie pour le middleware
-        document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}`; // 7 jours
+        document.cookie = `token=${data.token}; path=/; max-age=${60 * 60 * 2}`; // 2 heures
         setUser(data.user);
 
         // Rediriger vers le setup du profil uniquement à la création du compte
