@@ -9,9 +9,18 @@ import { FRENCH_CITIES } from '@/lib/frenchCities'
 
 // Styles pour l'animation flamme
 const flameStyles = `
-@keyframes flame {
-  0%, 100% { transform: translateY(0) scaleY(1); opacity: 0.8; }
-  50% { transform: translateY(-5px) scaleY(1.1); opacity: 1; }
+@keyframes rise {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-60px) scale(1.3);
+  }
+  100% {
+    transform: translateY(-120px) scale(0.5);
+    opacity: 0;
+  }
 }
 @keyframes flameGlow {
   0%, 100% { box-shadow: 0 0 20px rgba(251, 146, 60, 0.4), 0 0 40px rgba(251, 146, 60, 0.2); }
@@ -519,10 +528,20 @@ export default function Home() {
                                                     )}
                                                 </div>
                                                 {event.isFeatured && (
-                                                    <div className="absolute inset-0 pointer-events-none">
-                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-20 bg-gradient-to-t from-orange-500/30 via-orange-400/20 to-transparent rounded-full blur-xl" style={{ animation: 'flame 1.5s ease-in-out infinite' }}></div>
-                                                        <div className="absolute bottom-0 left-1/3 -translate-x-1/2 w-16 h-16 bg-gradient-to-t from-red-500/30 via-orange-400/20 to-transparent rounded-full blur-lg" style={{ animation: 'flame 1.8s ease-in-out infinite 0.3s' }}></div>
-                                                        <div className="absolute bottom-0 right-1/3 translate-x-1/2 w-14 h-14 bg-gradient-to-t from-yellow-500/30 via-orange-400/20 to-transparent rounded-full blur-lg" style={{ animation: 'flame 1.6s ease-in-out infinite 0.6s' }}></div>
+                                                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-t-2xl">
+                                                        {[...Array(15)].map((_, i) => (
+                                                            <span
+                                                                key={i}
+                                                                className="absolute w-2 h-5 rounded-full opacity-80"
+                                                                style={{
+                                                                    bottom: '-20px',
+                                                                    left: `${(i * 100) / 15}%`,
+                                                                    background: 'radial-gradient(circle, #ffd000, #ff4500, transparent)',
+                                                                    animation: `rise ${i % 2 === 0 ? '2s' : '1.5s'} linear infinite`,
+                                                                    animationDelay: `${i * 0.1}s`
+                                                                }}
+                                                            />
+                                                        ))}
                                                     </div>
                                                 )}
                                             </div>
@@ -540,10 +559,20 @@ export default function Home() {
                                                     )}
                                                 </div>
                                                 {event.isFeatured && (
-                                                    <div className="absolute inset-0 pointer-events-none">
-                                                        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-20 bg-gradient-to-t from-orange-500/30 via-orange-400/20 to-transparent rounded-full blur-xl" style={{ animation: 'flame 1.5s ease-in-out infinite' }}></div>
-                                                        <div className="absolute bottom-0 left-1/3 -translate-x-1/2 w-16 h-16 bg-gradient-to-t from-red-500/30 via-orange-400/20 to-transparent rounded-full blur-lg" style={{ animation: 'flame 1.8s ease-in-out infinite 0.3s' }}></div>
-                                                        <div className="absolute bottom-0 right-1/3 translate-x-1/2 w-14 h-14 bg-gradient-to-t from-yellow-500/30 via-orange-400/20 to-transparent rounded-full blur-lg" style={{ animation: 'flame 1.6s ease-in-out infinite 0.6s' }}></div>
+                                                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
+                                                        {[...Array(15)].map((_, i) => (
+                                                            <span
+                                                                key={i}
+                                                                className="absolute w-2 h-5 rounded-full opacity-80"
+                                                                style={{
+                                                                    bottom: '-20px',
+                                                                    left: `${(i * 100) / 15}%`,
+                                                                    background: 'radial-gradient(circle, #ffd000, #ff4500, transparent)',
+                                                                    animation: `rise ${i % 2 === 0 ? '2s' : '1.5s'} linear infinite`,
+                                                                    animationDelay: `${i * 0.1}s`
+                                                                }}
+                                                            />
+                                                        ))}
                                                     </div>
                                                 )}
                                             </div>
