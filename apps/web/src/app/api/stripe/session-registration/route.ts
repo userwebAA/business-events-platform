@@ -22,7 +22,11 @@ export async function GET(request: NextRequest) {
         });
 
         if (existingPayment?.registrationId) {
-            return NextResponse.json({ registrationId: existingPayment.registrationId });
+            // Récupérer la quantité depuis l'inscription
+            const reg = await prisma.registration.findUnique({
+                where: { id: existingPayment.registrationId },
+            });
+            return NextResponse.json({ registrationId: existingPayment.registrationId, quantity: (reg as any)?.quantity || 1 });
         }
 
         // 2. Le webhook n'a pas encore traité → vérifier la session Stripe et créer nous-mêmes
@@ -42,6 +46,7 @@ export async function GET(request: NextRequest) {
         const eventId = metadata.eventId;
         const userId = metadata.userId;
         const organizerId = metadata.organizerId;
+        const quantity = metadata.quantity ? parseInt(metadata.quantity) : 1;
         const formData = metadata.formData ? JSON.parse(metadata.formData) : {};
 
         // Vérifier qu'on n'a pas déjà créé (race condition)
@@ -71,13 +76,14 @@ export async function GET(request: NextRequest) {
                 eventId,
                 formData,
                 userId,
+                quantity,
             },
         });
 
         // Incrémenter le nombre de participants
         await prisma.event.update({
             where: { id: eventId },
-            data: { currentAttendees: { increment: 1 } },
+            data: { currentAttendees: { increment: quantity } },
         });
 
         // Créer le Payment
@@ -177,7 +183,7 @@ export async function GET(request: NextRequest) {
                         eventTitle: eventData.title,
                         eventDate: eventData.date,
                         eventId: eventData.id,
-                        currentAttendees: eventData.currentAttendees + 1,
+                        currentAttendees: eventData.currentAttendees + quantity,
                         maxAttendees: eventData.maxAttendees,
                     });
                     console.log('✅ Email notification envoyé à l\'organisateur:', organizer.email);
@@ -189,8 +195,8 @@ export async function GET(request: NextRequest) {
             console.error('⚠️ Erreur génération billet:', e);
         }
 
-        console.log(`✅ Fallback: inscription créée pour session ${sessionId}`);
-        return NextResponse.json({ registrationId: registration.id });
+        console.log(`✅ Fallback: inscription créée pour session ${sessionId} (${quantity} ticket(s))`);
+        return NextResponse.json({ registrationId: registration.id, quantity });
     } catch (error) {
         console.error('Erreur récupération/création registration par session:', error);
         return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

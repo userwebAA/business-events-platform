@@ -72,6 +72,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     const eventId = metadata.eventId;
     const userId = metadata.userId;
     const organizerId = metadata.organizerId;
+    const quantity = metadata.quantity ? parseInt(metadata.quantity) : 1;
     const formData = metadata.formData ? JSON.parse(metadata.formData) : {};
 
     // Vérifier si déjà traité (le fallback API peut l'avoir fait)
@@ -104,6 +105,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
             eventId,
             formData,
             userId,
+            quantity,
         },
         include: { event: true },
     });
@@ -111,7 +113,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     // Incrémenter le nombre de participants
     await prisma.event.update({
         where: { id: eventId },
-        data: { currentAttendees: { increment: 1 } },
+        data: { currentAttendees: { increment: quantity } },
     });
 
     // Créer le Payment en base
@@ -194,7 +196,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         }
     }
 
-    console.log(`✅ Payment completed: ${amount}€ for event ${eventData.title} (creator gets ${creatorAmount}€ after ${PAYOUT_DELAY_DAYS} days)`);
+    console.log(`✅ Payment completed: ${amount}€ (${quantity} ticket(s)) for event ${eventData.title} (creator gets ${creatorAmount}€ after ${PAYOUT_DELAY_DAYS} days)`);
 }
 
 async function handleChargeRefunded(charge: Stripe.Charge) {

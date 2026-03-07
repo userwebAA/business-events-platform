@@ -14,6 +14,7 @@ export default function PaymentSuccessPage() {
     const [event, setEvent] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [registrationId, setRegistrationId] = useState<string | null>(null);
+    const [quantity, setQuantity] = useState(1);
 
     useEffect(() => {
         // Marquer immédiatement comme inscrit dans sessionStorage
@@ -49,6 +50,7 @@ export default function PaymentSuccessPage() {
                 if (res.ok) {
                     const data = await res.json();
                     setRegistrationId(data.registrationId);
+                    if (data.quantity) setQuantity(data.quantity);
                     // Sauvegarder dans sessionStorage pour la page événement
                     sessionStorage.setItem(`registration_${eventId}`, data.registrationId);
                     sessionStorage.setItem(`registration_date_${eventId}`, new Date().toISOString());
@@ -115,9 +117,14 @@ export default function PaymentSuccessPage() {
                                 </div>
                             </div>
                             {event.price && (
-                                <div className="mt-3 pt-3 border-t border-gray-200">
-                                    <span className="text-lg font-bold text-emerald-600">{event.price.toFixed(2)}€</span>
-                                    <span className="text-sm text-gray-500 ml-1">payé</span>
+                                <div className="mt-3 pt-3 border-t border-gray-200 flex items-center justify-between">
+                                    <div>
+                                        <span className="text-lg font-bold text-emerald-600">{(event.price * quantity).toFixed(2)}€</span>
+                                        <span className="text-sm text-gray-500 ml-1">payé</span>
+                                    </div>
+                                    {quantity > 1 && (
+                                        <span className="text-sm text-gray-500">{quantity} place(s) × {event.price.toFixed(2)}€</span>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -131,7 +138,7 @@ export default function PaymentSuccessPage() {
                                     <CheckCircle className="h-5 w-5 text-white" />
                                 </div>
                                 <div className="text-left">
-                                    <h3 className="font-bold text-emerald-900">Paiement de {event.price.toFixed(2)}€</h3>
+                                    <h3 className="font-bold text-emerald-900">Paiement de {(event.price * quantity).toFixed(2)}€{quantity > 1 ? ` (${quantity} places)` : ''}</h3>
                                 </div>
                             </div>
                             <button
