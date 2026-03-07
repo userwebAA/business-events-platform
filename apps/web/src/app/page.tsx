@@ -1,14 +1,46 @@
 'use client';
 
 import Link from 'next/link'
-import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight, X, Share2 } from 'lucide-react'
+import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight, X, Share2, MapPin, Clock, Lock, XCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { format } from 'date-fns'
+import { fr } from 'date-fns/locale'
+import { FRENCH_CITIES } from '@/lib/frenchCities'
 
 export default function Home() {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallButton, setShowInstallButton] = useState(false);
     const [showInstallGuide, setShowInstallGuide] = useState(false);
     const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
+    const [publicEvents, setPublicEvents] = useState<any[]>([]);
+    const [cityFilter, setCityFilter] = useState('');
+    const [eventsLoading, setEventsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchPublicEvents = async () => {
+            try {
+                const res = await fetch('/api/events');
+                if (res.ok) {
+                    const data = await res.json();
+                    const now = new Date();
+                    setPublicEvents(
+                        data
+                            .map((e: any) => ({ ...e, date: new Date(e.date) }))
+                            .filter((e: any) => new Date(e.date) > now && !e.isPrivate && e.status !== 'cancelled')
+                    );
+                }
+            } catch (e) {
+                console.error('Erreur fetch events:', e);
+            } finally {
+                setEventsLoading(false);
+            }
+        };
+        fetchPublicEvents();
+    }, []);
+
+    const filteredPublicEvents = cityFilter
+        ? publicEvents.filter(e => e.location?.toLowerCase().includes(cityFilter.toLowerCase()))
+        : publicEvents;
 
     useEffect(() => {
         const ua = navigator.userAgent || '';
@@ -330,6 +362,161 @@ export default function Home() {
                     </div>
                 </div>
             )}
+
+            {/* Section Soirées disponibles */}
+            <section className="py-16 sm:py-24 bg-gradient-to-br from-gray-50 via-white to-sky-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16">
+                    <div className="text-center mb-10">
+                        <span className="inline-block bg-sky-100 text-sky-700 text-sm font-bold px-4 py-2 rounded-full mb-4">
+                            🎉 Événements à venir
+                        </span>
+                        <h2 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-4">
+                            Découvrez les prochaines soirées
+                        </h2>
+                        <p className="text-base sm:text-xl text-gray-500 max-w-2xl mx-auto">
+                            Rejoignez des événements professionnels près de chez vous
+                        </p>
+                    </div>
+
+                    {/* Filtre ville */}
+                    <div className="flex justify-center mb-10">
+                        <div className="relative w-full max-w-sm">
+                            <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
+                            <select
+                                value={cityFilter}
+                                onChange={(e) => setCityFilter(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium transition-all hover:border-gray-300 bg-white appearance-none"
+                            >
+                                <option value="">Toutes les villes</option>
+                                {FRENCH_CITIES.map((city) => (
+                                    <option key={city} value={city}>{city}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Grille d'événements */}
+                    {eventsLoading ? (
+                        <div className="text-center py-16">
+                            <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500"></div>
+                            <p className="text-gray-500 mt-4">Chargement des événements...</p>
+                        </div>
+                    ) : filteredPublicEvents.length === 0 ? (
+                        <div className="text-center py-16">
+                            <div className="bg-gray-100 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <Calendar className="h-10 w-10 text-gray-400" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                {cityFilter ? 'Aucun événement dans cette ville' : 'Aucun événement à venir'}
+                            </h3>
+                            <p className="text-gray-500 mb-4">
+                                {cityFilter ? 'Essayez une autre ville ou consultez tous les événements.' : 'Revenez bientôt pour découvrir de nouvelles soirées !'}
+                            </p>
+                            {cityFilter && (
+                                <button
+                                    onClick={() => setCityFilter('')}
+                                    className="inline-flex items-center gap-2 bg-sky-50 text-sky-600 px-5 py-2.5 rounded-xl font-bold hover:bg-sky-100 transition-all"
+                                >
+                                    <X className="h-4 w-4" />
+                                    Voir toutes les villes
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {filteredPublicEvents.slice(0, 6).map((event) => (
+                                    <Link
+                                        key={event.id}
+                                        href={`/register?redirect=/events/${event.id}`}
+                                        className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-sky-200 transition-all duration-200 hover:-translate-y-1"
+                                    >
+                                        {event.imageUrl ? (
+                                            <div className="h-48 bg-gray-200 overflow-hidden relative">
+                                                <img
+                                                    src={event.imageUrl}
+                                                    alt={event.title}
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                />
+                                                <div className="absolute top-3 left-3 flex gap-2">
+                                                    <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm ${event.type === 'free' ? 'bg-emerald-500 bg-opacity-90 text-white' : 'bg-blue-500 bg-opacity-90 text-white'}`}>
+                                                        {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="h-48 bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center relative">
+                                                <Calendar className="h-16 w-16 text-sky-300" />
+                                                <div className="absolute top-3 left-3 flex gap-2">
+                                                    <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md ${event.type === 'free' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'}`}>
+                                                        {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="p-5">
+                                            <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-sky-700 transition-colors line-clamp-1">
+                                                {event.title}
+                                            </h3>
+                                            <p className="text-gray-500 text-sm mb-4 line-clamp-2 leading-relaxed">{event.description}</p>
+
+                                            <div className="space-y-2.5">
+                                                <div className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                    <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center shrink-0">
+                                                        <Clock className="h-4 w-4 text-sky-500" />
+                                                    </div>
+                                                    <span className="font-medium">{format(new Date(event.date), 'EEEE d MMMM yyyy', { locale: fr })}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                    <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
+                                                        <MapPin className="h-4 w-4 text-purple-500" />
+                                                    </div>
+                                                    <span className="font-medium">{event.location}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2.5 text-sm text-gray-600">
+                                                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0">
+                                                        <Users className="h-4 w-4 text-emerald-500" />
+                                                    </div>
+                                                    <span className="font-medium">{event.currentAttendees}/{event.maxAttendees || '∞'} participants</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 bg-gradient-to-r from-sky-500 to-blue-600 text-white text-center py-2.5 rounded-xl font-bold text-sm group-hover:from-sky-600 group-hover:to-blue-700 transition-all">
+                                                S'inscrire →
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+
+                            {filteredPublicEvents.length > 6 && (
+                                <div className="text-center mt-10">
+                                    <Link
+                                        href="/register"
+                                        className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-bold hover:from-sky-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                                    >
+                                        Voir tous les événements
+                                        <ArrowRight className="h-5 w-5" />
+                                    </Link>
+                                </div>
+                            )}
+                        </>
+                    )}
+
+                    {/* CTA inscription */}
+                    <div className="mt-12 text-center">
+                        <p className="text-gray-500 mb-4">Créez un compte pour vous inscrire aux événements</p>
+                        <Link
+                            href="/register"
+                            className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-bold hover:from-sky-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        >
+                            Créer un compte gratuitement
+                            <ArrowRight className="h-5 w-5" />
+                        </Link>
+                    </div>
+                </div>
+            </section>
 
             {/* Features Section */}
             <section className="py-24 bg-white">
