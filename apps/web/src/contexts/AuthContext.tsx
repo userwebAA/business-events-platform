@@ -49,12 +49,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (response.ok) {
                 const data = await response.json();
                 setUser(data.user);
-                // S'assurer que le cookie est synchronisé
-                document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
             } else {
                 // Token invalide/expiré côté serveur
                 localStorage.removeItem('token');
-                document.cookie = 'token=; path=/; max-age=0';
+                document.cookie = 'token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                setUser(null);
             }
         } catch (error) {
             console.error('Auth check error:', error);

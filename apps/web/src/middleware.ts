@@ -1,6 +1,20 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// Vérifie si un JWT est encore valide en décodant le payload (sans vérifier la signature côté Edge)
+function isTokenExpired(token: string): boolean {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (!payload.exp) return true;
+    // Expiration en secondes, Date.now() en ms
+    return payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
 
@@ -12,15 +26,27 @@ export function middleware(request: NextRequest) {
     route === '/' ? pathname === '/' : pathname.startsWith(route)
   );
 
-  // Si pas de token et route non publique : rediriger vers login
-  if (!token && !isPublicRoute) {
+  // Vérifier si le token est valide (non expiré)
+  const hasValidToken = token && !isTokenExpired(token);
+
+  // Si token expiré, le supprimer du cookie
+  if (token && !hasValidToken) {
+    const response = isPublicRoute
+      ? NextResponse.next()
+      : NextResponse.redirect(new URL('/login', request.url));
+    response.cookies.set('token', '', { path: '/', maxAge: 0 });
+    return response;
+  }
+
+  // Si pas de token valide et route non publique : rediriger vers login
+  if (!hasValidToken && !isPublicRoute) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Si token existe et utilisateur sur page login/register : rediriger vers dashboard
-  if (token) {
+  // Si token valide et utilisateur sur page login/register : rediriger vers dashboard
+  if (hasValidToken) {
     const authPages = ['/login', '/register', '/forgot-password'];
     const isAuthPage = authPages.some(route => pathname.startsWith(route));
     if (isAuthPage) {
