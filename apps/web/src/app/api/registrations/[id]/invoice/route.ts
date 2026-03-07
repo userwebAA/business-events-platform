@@ -56,6 +56,7 @@ export async function GET(
       attendeeEmail: (registration.formData as any)?.email,
       company: (registration.formData as any)?.company,
       price: registration.event.price,
+      quantity: (registration as any).quantity || 1,
       currency: registration.event.currency || 'EUR',
       registrationId: registration.id
     };

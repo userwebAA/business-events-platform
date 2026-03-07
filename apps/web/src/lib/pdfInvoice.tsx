@@ -108,6 +108,7 @@ interface InvoiceData {
     attendeeEmail?: string;
     company?: string;
     price: number;
+    quantity?: number;
     currency: string;
     registrationId: string;
 }
@@ -182,15 +183,15 @@ export const createInvoiceDocument = (data: InvoiceData) => {
                     </View>
                     <View style={styles.tableRow}>
                         <Text style={styles.col1}>Inscription - {data.eventTitle}</Text>
-                        <Text style={styles.col2}>1</Text>
-                        <Text style={styles.col3}>{formatCurrency(data.price, data.currency)}</Text>
+                        <Text style={styles.col2}>{data.quantity || 1}</Text>
+                        <Text style={styles.col3}>{formatCurrency(data.price * (data.quantity || 1), data.currency)}</Text>
                     </View>
                 </View>
 
                 {/* Total */}
                 <View style={styles.total}>
                     <Text style={styles.totalLabel}>TOTAL:</Text>
-                    <Text style={styles.totalValue}>{formatCurrency(data.price, data.currency)}</Text>
+                    <Text style={styles.totalValue}>{formatCurrency(data.price * (data.quantity || 1), data.currency)}</Text>
                 </View>
 
                 {/* Footer */}
