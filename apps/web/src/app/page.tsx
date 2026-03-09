@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight, X, Share2, MapPin, Clock, Lock, XCircle } from 'lucide-react'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { format } from 'date-fns'
@@ -545,14 +544,10 @@ export default function Home() {
                                     >
                                         {event.imageUrl ? (
                                             <div className="h-48 bg-gray-200 overflow-hidden relative">
-                                                <Image
+                                                <img
                                                     src={event.imageUrl}
                                                     alt={event.title}
-                                                    width={800}
-                                                    height={400}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                                    quality={80}
                                                 />
                                                 <div className="absolute top-3 left-3 flex gap-2">
                                                     <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm ${event.type === 'free' ? 'bg-emerald-500 bg-opacity-90 text-white' : 'bg-blue-500 bg-opacity-90 text-white'}`}>
