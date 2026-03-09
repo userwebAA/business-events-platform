@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
     User, MapPin, Briefcase, Building, Calendar, Users, ExternalLink,
     ArrowLeft, Loader2, LinkIcon, Award, Clock, ChevronRight, Lock,
-    BadgeCheck, Eye, EyeOff, UserPlus, UserMinus, Bell
+    BadgeCheck, Eye, EyeOff, UserPlus, UserMinus, Bell, X
 } from 'lucide-react';
 
 interface PublicProfile {
@@ -67,6 +67,12 @@ export default function PublicProfilePage() {
     const [followersCount, setFollowersCount] = useState(0);
     const [followingCount, setFollowingCount] = useState(0);
     const [followLoading, setFollowLoading] = useState(false);
+    const [showFollowersModal, setShowFollowersModal] = useState(false);
+    const [showFollowingModal, setShowFollowingModal] = useState(false);
+    const [followers, setFollowers] = useState<any[]>([]);
+    const [following, setFollowing] = useState<any[]>([]);
+    const [loadingFollowers, setLoadingFollowers] = useState(false);
+    const [loadingFollowing, setLoadingFollowing] = useState(false);
 
     const userId = params.id as string;
     const isOwnProfile = currentUser?.id === userId;
@@ -141,6 +147,84 @@ export default function PublicProfilePage() {
         } finally {
             setFollowLoading(false);
         }
+    };
+
+    const fetchFollowers = async () => {
+        setLoadingFollowers(true);
+        try {
+            const token = localStorage.getItem('token');
+            const headers: Record<string, string> = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const res = await fetch(`/api/user/${userId}/followers`, { headers });
+            if (res.ok) {
+                const data = await res.json();
+                setFollowers(data.followers || []);
+            }
+        } catch (e) {
+            console.error('Erreur fetch followers:', e);
+        } finally {
+            setLoadingFollowers(false);
+        }
+    };
+
+    const fetchFollowing = async () => {
+        setLoadingFollowing(true);
+        try {
+            const token = localStorage.getItem('token');
+            const headers: Record<string, string> = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+            const res = await fetch(`/api/user/${userId}/following`, { headers });
+            if (res.ok) {
+                const data = await res.json();
+                setFollowing(data.following || []);
+            }
+        } catch (e) {
+            console.error('Erreur fetch following:', e);
+        } finally {
+            setLoadingFollowing(false);
+        }
+    };
+
+    const handleUnfollow = async (targetUserId: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/user/${targetUserId}/follow`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (res.ok) {
+                setFollowing(prev => prev.filter(u => u.id !== targetUserId));
+                setFollowingCount(prev => prev - 1);
+            }
+        } catch (e) {
+            console.error('Erreur unfollow:', e);
+        }
+    };
+
+    const handleRemoveFollower = async (followerUserId: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/user/${followerUserId}/remove-follower`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            if (res.ok) {
+                setFollowers(prev => prev.filter(u => u.id !== followerUserId));
+                setFollowersCount(prev => prev - 1);
+            }
+        } catch (e) {
+            console.error('Erreur remove follower:', e);
+        }
+    };
+
+    const openFollowersModal = () => {
+        setShowFollowersModal(true);
+        fetchFollowers();
+    };
+
+    const openFollowingModal = () => {
+        setShowFollowingModal(true);
+        fetchFollowing();
     };
 
     const displayName = profile?.firstName && profile?.lastName
@@ -308,12 +392,22 @@ export default function PublicProfilePage() {
                                             Membre depuis {memberSince}
                                         </span>
                                     )}
-                                    <span className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5">
                                         <Users className="h-3.5 w-3.5 text-gray-400" />
-                                        <strong className="text-gray-700">{followersCount}</strong> abonné{followersCount > 1 ? 's' : ''}
+                                        <button
+                                            onClick={openFollowersModal}
+                                            className="hover:underline cursor-pointer"
+                                        >
+                                            <strong className="text-gray-700">{followersCount}</strong> abonné{followersCount > 1 ? 's' : ''}
+                                        </button>
                                         <span className="text-gray-300">·</span>
-                                        <strong className="text-gray-700">{followingCount}</strong> abonnement{followingCount > 1 ? 's' : ''}
-                                    </span>
+                                        <button
+                                            onClick={openFollowingModal}
+                                            className="hover:underline cursor-pointer"
+                                        >
+                                            <strong className="text-gray-700">{followingCount}</strong> abonnement{followingCount > 1 ? 's' : ''}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {/* Actions */}
@@ -323,8 +417,8 @@ export default function PublicProfilePage() {
                                             onClick={handleFollow}
                                             disabled={followLoading}
                                             className={`inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl transition-all shadow-sm disabled:opacity-50 ${isFollowing
-                                                    ? 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 border border-gray-200'
-                                                    : 'bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700'
+                                                ? 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 border border-gray-200'
+                                                : 'bg-gradient-to-r from-sky-500 to-blue-600 text-white hover:from-sky-600 hover:to-blue-700'
                                                 }`}
                                         >
                                             {followLoading ? (
@@ -627,6 +721,106 @@ export default function PublicProfilePage() {
                     </div>
                 </div>
             </div>
+
+            {/* Modal Abonnés */}
+            {showFollowersModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowFollowersModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-900">Abonnés ({followersCount})</h3>
+                            <button onClick={() => setShowFollowersModal(false)} className="text-gray-400 hover:text-gray-600">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto max-h-[60vh]">
+                            {loadingFollowers ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
+                                </div>
+                            ) : followers.length === 0 ? (
+                                <div className="text-center py-12 px-6">
+                                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500">Aucun abonné</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-gray-100">
+                                    {followers.map((follower) => (
+                                        <div key={follower.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                                            <Link href={`/profile/${follower.id}`} className="flex items-center gap-3 flex-1" onClick={() => setShowFollowersModal(false)}>
+                                                <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                                                    {follower.name?.[0]?.toUpperCase() || 'U'}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">{follower.name}</p>
+                                                    {follower.position && <p className="text-xs text-gray-500">{follower.position}</p>}
+                                                </div>
+                                            </Link>
+                                            {isOwnProfile && (
+                                                <button
+                                                    onClick={() => handleRemoveFollower(follower.id)}
+                                                    className="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                                >
+                                                    Retirer
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Abonnements */}
+            {showFollowingModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowFollowingModal(false)}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-900">Abonnements ({followingCount})</h3>
+                            <button onClick={() => setShowFollowingModal(false)} className="text-gray-400 hover:text-gray-600">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto max-h-[60vh]">
+                            {loadingFollowing ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="h-8 w-8 animate-spin text-sky-500" />
+                                </div>
+                            ) : following.length === 0 ? (
+                                <div className="text-center py-12 px-6">
+                                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500">Aucun abonnement</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-gray-100">
+                                    {following.map((user) => (
+                                        <div key={user.id} className="p-4 flex items-center justify-between hover:bg-gray-50">
+                                            <Link href={`/profile/${user.id}`} className="flex items-center gap-3 flex-1" onClick={() => setShowFollowingModal(false)}>
+                                                <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                                                    {user.name?.[0]?.toUpperCase() || 'U'}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-gray-900">{user.name}</p>
+                                                    {user.position && <p className="text-xs text-gray-500">{user.position}</p>}
+                                                </div>
+                                            </Link>
+                                            {isOwnProfile && (
+                                                <button
+                                                    onClick={() => handleUnfollow(user.id)}
+                                                    className="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                                >
+                                                    Se désabonner
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
