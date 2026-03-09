@@ -150,8 +150,8 @@ export default function SettingsPage() {
             setVideoError('Le fichier doit être une vidéo');
             return;
         }
-        if (file.size > 10 * 1024 * 1024) {
-            setVideoError('La vidéo ne doit pas dépasser 10 Mo');
+        if (file.size > 20 * 1024 * 1024) {
+            setVideoError('La vidéo ne doit pas dépasser 20 Mo');
             return;
         }
 
@@ -537,7 +537,7 @@ export default function SettingsPage() {
                                                                 </div>
                                                                 <div className="text-center">
                                                                     <p className="text-sm font-semibold text-gray-700">Cliquez pour ajouter une vidéo</p>
-                                                                    <p className="text-xs text-gray-400 mt-1">30 secondes max · MP4, MOV · 10 Mo max</p>
+                                                                    <p className="text-xs text-gray-400 mt-1">30 secondes max · MP4, MOV · 20 Mo max</p>
                                                                 </div>
                                                             </>
                                                         )}
