@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 secondes max pour l'upload
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 

@@ -1,5 +1,10 @@
 {
   "regions": ["cdg1"],
+  "functions": {
+    "apps/web/src/app/api/user/profile-video/route.ts": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/reminders",
