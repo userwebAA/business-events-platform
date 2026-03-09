@@ -31,6 +31,14 @@ const nextConfig = {
   transpilePackages: ['shared'],
   images: {
     domains: ['images.unsplash.com', 'localhost'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
+      },
+    ],
+    formats: ['image/webp', 'image/avif'],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,

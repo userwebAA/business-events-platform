@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight, X, Share2, MapPin, Clock, Lock, XCircle } from 'lucide-react'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { format } from 'date-fns'
@@ -375,7 +376,7 @@ export default function Home() {
             {showInstallGuide && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowInstallGuide(false)}>
                     <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md p-6 sm:p-8 relative" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setShowInstallGuide(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                        <button onClick={() => setShowInstallGuide(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" aria-label="Fermer le guide d'installation">
                             <X className="h-6 w-6" />
                         </button>
                         <div className="text-center mb-6">
@@ -472,7 +473,7 @@ export default function Home() {
                         <h2 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-4">
                             Découvrez les prochaines soirées
                         </h2>
-                        <p className="text-base sm:text-xl text-gray-500 max-w-2xl mx-auto">
+                        <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
                             Rejoignez des événements professionnels près de chez vous
                         </p>
                     </div>
@@ -480,11 +481,14 @@ export default function Home() {
                     {/* Filtre ville */}
                     <div className="flex justify-center mb-10">
                         <div className="relative w-full max-w-sm">
+                            <label htmlFor="city-filter" className="sr-only">Filtrer par ville</label>
                             <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
                             <select
+                                id="city-filter"
                                 value={cityFilter}
                                 onChange={(e) => setCityFilter(e.target.value)}
                                 className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium transition-all hover:border-gray-300 bg-white appearance-none"
+                                aria-label="Filtrer les événements par ville"
                             >
                                 <option value="">Toutes les villes</option>
                                 {FRENCH_CITIES.map((city) => (
@@ -505,10 +509,10 @@ export default function Home() {
                             <div className="bg-gray-100 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4">
                                 <Calendar className="h-10 w-10 text-gray-400" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                            <p className="text-xl font-bold text-gray-900 mb-2">
                                 {cityFilter ? 'Aucun événement dans cette ville' : 'Aucun événement à venir'}
-                            </h3>
-                            <p className="text-gray-500 mb-4">
+                            </p>
+                            <p className="text-gray-600 mb-4">
                                 {cityFilter ? 'Essayez une autre ville ou consultez tous les événements.' : 'Revenez bientôt pour découvrir de nouvelles soirées !'}
                             </p>
                             {cityFilter && (
@@ -541,10 +545,14 @@ export default function Home() {
                                     >
                                         {event.imageUrl ? (
                                             <div className="h-48 bg-gray-200 overflow-hidden relative">
-                                                <img
+                                                <Image
                                                     src={event.imageUrl}
                                                     alt={event.title}
+                                                    width={800}
+                                                    height={400}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                                    quality={80}
                                                 />
                                                 <div className="absolute top-3 left-3 flex gap-2">
                                                     <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm ${event.type === 'free' ? 'bg-emerald-500 bg-opacity-90 text-white' : 'bg-blue-500 bg-opacity-90 text-white'}`}>
@@ -611,7 +619,7 @@ export default function Home() {
                                             <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-sky-700 transition-colors line-clamp-1">
                                                 {event.title}
                                             </h3>
-                                            <p className="text-gray-500 text-sm mb-4 line-clamp-2 leading-relaxed">{event.description}</p>
+                                            <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">{event.description}</p>
 
                                             <div className="space-y-2.5">
                                                 <div className="flex items-center gap-2.5 text-sm text-gray-600">
