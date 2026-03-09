@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 
-const MAX_VIDEO_SIZE = 5 * 1024 * 1024; // 5 Mo max pour stockage en base64
+const MAX_VIDEO_SIZE = 10 * 1024 * 1024; // 10 Mo max pour stockage en base64
 
 export async function POST(request: NextRequest) {
     try {
@@ -29,9 +29,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Le fichier doit être une vidéo' }, { status: 400 });
         }
 
-        // Limiter à 5MB pour stockage en DB
+        // Limiter à 10MB pour stockage en DB
         if (file.size > MAX_VIDEO_SIZE) {
-            return NextResponse.json({ error: 'La vidéo ne doit pas dépasser 5 Mo' }, { status: 400 });
+            return NextResponse.json({ error: 'La vidéo ne doit pas dépasser 10 Mo' }, { status: 400 });
         }
 
         // Convertir en base64 Data URL
