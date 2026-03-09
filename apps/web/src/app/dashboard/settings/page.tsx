@@ -171,22 +171,37 @@ export default function SettingsPage() {
             setUploadingVideo(true);
             try {
                 const token = localStorage.getItem('token');
+                console.log('🎥 Début upload vidéo:', {
+                    fileName: file.name,
+                    fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+                    fileType: file.type,
+                    duration: `${video.duration.toFixed(2)}s`
+                });
+
                 const formData = new FormData();
                 formData.append('video', file);
+
                 const res = await fetch('/api/user/profile-video', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData,
                 });
+
+                console.log('📡 Réponse serveur:', res.status, res.statusText);
+
                 if (res.ok) {
                     const data = await res.json();
+                    console.log('✅ Upload réussi');
                     setProfileVideo(data.videoUrl);
+                    setVideoError('');
                 } else {
                     const err = await res.json();
-                    setVideoError(err.error || 'Erreur upload');
+                    console.error('❌ Erreur upload:', err);
+                    setVideoError(err.error || `Erreur ${res.status}: ${res.statusText}`);
                 }
             } catch (err) {
-                setVideoError('Erreur de connexion');
+                console.error('❌ Exception upload:', err);
+                setVideoError(`Erreur de connexion: ${err instanceof Error ? err.message : 'Unknown'}`);
             } finally {
                 setUploadingVideo(false);
             }
