@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
-import { calculatePlatformFee, PLATFORM_FEE_FIXED, PLATFORM_FEE_THRESHOLD, PLATFORM_FEE_PERCENT_ABOVE } from '@/lib/stripe';
+import { calculatePlatformFee, calculateStripeFee, PLATFORM_FEE_FIXED, PLATFORM_FEE_THRESHOLD, PLATFORM_FEE_PERCENT_ABOVE } from '@/lib/stripe';
 
 // GET: Récupérer les paiements reçus par l'organisateur
 export async function GET(request: NextRequest) {
@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
         const totalEarned = succeededPayments.reduce((sum, p) => sum + p.creatorAmount, 0);
         const totalRefunded = refundedPayments.reduce((sum, p) => sum + p.amount, 0);
         const totalPlatformFees = succeededPayments.reduce((sum, p) => sum + p.platformFee, 0);
+        const totalStripeFees = succeededPayments.reduce((sum, p) => sum + calculateStripeFee(p.amount), 0);
 
         // Enrichir les paiements avec les infos événement + participant
         const enrichedPayments = payments.map(p => {
@@ -57,10 +58,12 @@ export async function GET(request: NextRequest) {
             const formData = reg?.formData as any;
             const participantName = formData?.name || formData?.firstName || 'Participant';
             const participantEmail = formData?.email || '';
+            const stripeFee = calculateStripeFee(p.amount);
             return {
                 id: p.id,
                 amount: p.amount,
                 platformFee: p.platformFee,
+                stripeFee,
                 creatorAmount: p.creatorAmount,
                 currency: p.currency,
                 status: p.status,
@@ -84,6 +87,7 @@ export async function GET(request: NextRequest) {
                 totalEarned: Math.round(totalEarned * 100) / 100,
                 totalRefunded: Math.round(totalRefunded * 100) / 100,
                 totalPlatformFees: Math.round(totalPlatformFees * 100) / 100,
+                totalStripeFees: Math.round(totalStripeFees * 100) / 100,
                 totalPayments: succeededPayments.length,
                 totalRefunds: refundedPayments.length,
             },

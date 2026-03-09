@@ -23,5 +23,13 @@ export function calculatePlatformFee(priceInEuros: number): number {
     return Math.round(priceInEuros * PLATFORM_FEE_PERCENT_ABOVE) / 100;
 }
 
+// Frais Stripe
+export const STRIPE_FEE_PERCENT = 2.9; // 2.9%
+export const STRIPE_FEE_FIXED = 0.25; // 0.25€
+
+export function calculateStripeFee(amountInEuros: number): number {
+    return Math.round((amountInEuros * STRIPE_FEE_PERCENT / 100 + STRIPE_FEE_FIXED) * 100) / 100;
+}
+
 // Délai avant payout au créateur (en jours)
 export const PAYOUT_DELAY_DAYS = Number(process.env.PAYOUT_DELAY_DAYS || '7');

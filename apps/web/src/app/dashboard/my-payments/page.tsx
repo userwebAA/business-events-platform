@@ -12,6 +12,7 @@ interface PaymentItem {
     id: string;
     amount: number;
     platformFee: number;
+    stripeFee: number;
     creatorAmount: number;
     currency: string;
     status: string;
@@ -38,6 +39,8 @@ interface EventGroup {
     payments: PaymentItem[];
     totalAmount: number;
     totalCreatorAmount: number;
+    totalPlatformFees: number;
+    totalStripeFees: number;
     totalFees: number;
     succeededCount: number;
     refundedCount: number;
@@ -56,6 +59,7 @@ interface Stats {
     totalEarned: number;
     totalRefunded: number;
     totalPlatformFees: number;
+    totalStripeFees: number;
     totalPayments: number;
     totalRefunds: number;
 }
@@ -87,6 +91,8 @@ export default function MyPaymentsPage() {
                     payments: [],
                     totalAmount: 0,
                     totalCreatorAmount: 0,
+                    totalPlatformFees: 0,
+                    totalStripeFees: 0,
                     totalFees: 0,
                     succeededCount: 0,
                     refundedCount: 0,
@@ -97,7 +103,9 @@ export default function MyPaymentsPage() {
             if (p.status === 'SUCCEEDED') {
                 group.totalAmount += p.amount;
                 group.totalCreatorAmount += p.creatorAmount;
-                group.totalFees += p.platformFee;
+                group.totalPlatformFees += p.platformFee;
+                group.totalStripeFees += p.stripeFee;
+                group.totalFees += (p.platformFee + p.stripeFee);
                 group.succeededCount++;
             } else if (p.status === 'REFUNDED') {
                 group.refundedCount++;
@@ -278,8 +286,8 @@ export default function MyPaymentsPage() {
                                     <Euro className="h-5 w-5 text-amber-600" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalPlatformFees.toFixed(2)}€</p>
-                                    <p className="text-xs text-gray-500 font-medium">Frais plateforme</p>
+                                    <p className="text-xl sm:text-2xl font-bold text-gray-900">{(stats.totalPlatformFees + stats.totalStripeFees).toFixed(2)}€</p>
+                                    <p className="text-xs text-gray-500 font-medium">Frais totaux</p>
                                 </div>
                             </div>
                         </div>
@@ -419,14 +427,18 @@ export default function MyPaymentsPage() {
                                     {isExpanded && (
                                         <div className="border-t border-gray-100">
                                             {/* Résumé événement */}
-                                            <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50/50 border-b border-gray-100">
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-gray-50/50 border-b border-gray-100">
                                                 <div className="text-center">
                                                     <p className="text-lg font-bold text-gray-900">{group.totalAmount.toFixed(2)}€</p>
                                                     <p className="text-xs text-gray-500">Total brut</p>
                                                 </div>
                                                 <div className="text-center">
-                                                    <p className="text-lg font-bold text-amber-600">-{group.totalFees.toFixed(2)}€</p>
-                                                    <p className="text-xs text-gray-500">Frais</p>
+                                                    <p className="text-lg font-bold text-purple-600">-{group.totalStripeFees.toFixed(2)}€</p>
+                                                    <p className="text-xs text-gray-500">Frais Stripe</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-lg font-bold text-amber-600">-{group.totalPlatformFees.toFixed(2)}€</p>
+                                                    <p className="text-xs text-gray-500">Frais plateforme</p>
                                                 </div>
                                                 <div className="text-center">
                                                     <p className="text-lg font-bold text-emerald-600">{group.totalCreatorAmount.toFixed(2)}€</p>
@@ -441,7 +453,8 @@ export default function MyPaymentsPage() {
                                                             <th className="text-left px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Participant</th>
                                                             <th className="text-left px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Date</th>
                                                             <th className="text-right px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Montant</th>
-                                                            <th className="text-right px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Frais</th>
+                                                            <th className="text-right px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Frais Stripe</th>
+                                                            <th className="text-right px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Frais Plat.</th>
                                                             <th className="text-right px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Net</th>
                                                             <th className="text-center px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Statut</th>
                                                             <th className="text-center px-4 py-2.5 font-bold text-gray-600 text-xs uppercase tracking-wider">Actions</th>
@@ -461,6 +474,9 @@ export default function MyPaymentsPage() {
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right font-bold text-gray-900 whitespace-nowrap">
                                                                     {payment.amount.toFixed(2)}€
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right text-purple-600 font-medium whitespace-nowrap">
+                                                                    -{payment.stripeFee.toFixed(2)}€
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right text-amber-600 font-medium whitespace-nowrap">
                                                                     -{payment.platformFee.toFixed(2)}€
