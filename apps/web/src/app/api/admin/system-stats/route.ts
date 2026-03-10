@@ -30,17 +30,36 @@ export async function GET(request: NextRequest) {
             eventsCount,
             registrationsCount,
             paymentsCount,
+            usersWithVideos,
         ] = await Promise.all([
             prisma.user.count(),
             prisma.event.count(),
             prisma.registration.count(),
             prisma.payment.count(),
+            prisma.user.findMany({
+                where: {
+                    profileVideo: {
+                        not: null
+                    }
+                },
+                select: {
+                    profileVideo: true
+                }
+            }),
         ]);
 
+        // Calculer la taille réelle des vidéos de présentation (stockées en base64)
+        let videoStorageMB = 0;
+        for (const user of usersWithVideos) {
+            if (user.profileVideo) {
+                // Taille en bytes du string base64, puis convertir en MB
+                const videoSizeBytes = Buffer.byteLength(user.profileVideo, 'utf8');
+                videoStorageMB += videoSizeBytes / (1024 * 1024);
+            }
+        }
+
         // Estimer la taille de la base de données
-        // Note: Ceci est une estimation approximative basée sur le nombre d'enregistrements
-        // Pour une mesure précise, vous devriez utiliser l'API Neon ou des requêtes SQL spécifiques
-        const estimatedSizePerUser = 0.05; // MB
+        const estimatedSizePerUser = 0.05; // MB (données utilisateur sans vidéo)
         const estimatedSizePerEvent = 0.1; // MB (avec image base64)
         const estimatedSizePerRegistration = 0.02; // MB
         const estimatedSizePerPayment = 0.01; // MB
@@ -49,7 +68,8 @@ export async function GET(request: NextRequest) {
             (usersCount * estimatedSizePerUser) +
             (eventsCount * estimatedSizePerEvent) +
             (registrationsCount * estimatedSizePerRegistration) +
-            (paymentsCount * estimatedSizePerPayment);
+            (paymentsCount * estimatedSizePerPayment) +
+            videoStorageMB; // Ajouter la taille réelle des vidéos
 
         const storageLimitMB = 500; // 0.5 GB = 500 MB (Neon Free Plan)
         const storagePercentage = (estimatedStorageMB / storageLimitMB) * 100;
