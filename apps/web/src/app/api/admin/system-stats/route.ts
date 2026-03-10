@@ -59,10 +59,11 @@ export async function GET(request: NextRequest) {
         }
 
         // Estimer la taille de la base de données
-        const estimatedSizePerUser = 0.05; // MB (données utilisateur sans vidéo)
-        const estimatedSizePerEvent = 0.1; // MB (avec image base64)
-        const estimatedSizePerRegistration = 0.02; // MB
-        const estimatedSizePerPayment = 0.01; // MB
+        // Estimations ajustées pour correspondre aux données réelles de Neon
+        const estimatedSizePerUser = 0.01; // MB (données utilisateur sans vidéo)
+        const estimatedSizePerEvent = 0.02; // MB (métadonnées événement, images Unsplash sont des URLs)
+        const estimatedSizePerRegistration = 0.005; // MB
+        const estimatedSizePerPayment = 0.003; // MB
 
         const estimatedStorageMB =
             (usersCount * estimatedSizePerUser) +
@@ -94,8 +95,10 @@ export async function GET(request: NextRequest) {
             }
         });
 
-        // Estimation: 1 activité = ~0.01 heures de compute
-        const estimatedComputeHours = monthlyActivity * 0.01;
+        // Estimation basée sur l'activité réelle
+        // Base: ~5 heures + activité mensuelle
+        const baseComputeHours = 5;
+        const estimatedComputeHours = baseComputeHours + (monthlyActivity * 0.005);
         const computeHoursLimit = 100; // Neon Free Plan
         const computeHoursPercentage = (estimatedComputeHours / computeHoursLimit) * 100;
 
