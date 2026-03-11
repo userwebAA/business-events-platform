@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, ArrowRight, Ticket, AlertTriangle, XCircle, Loader2, User as UserIcon, FileText, Heart } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, ArrowRight, Ticket, AlertTriangle, XCircle, Loader2, User as UserIcon, FileText, Heart, QrCode, ScanLine, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import { Event } from 'shared';
@@ -28,6 +28,10 @@ export default function EventDetailPage() {
     const [goodEveningDone, setGoodEveningDone] = useState(false);
     const [goodEveningLoading, setGoodEveningLoading] = useState(false);
     const [goodEveningCount, setGoodEveningCount] = useState(0);
+    const [showQrModal, setShowQrModal] = useState(false);
+    const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
+    const [qrLoading, setQrLoading] = useState(false);
+    const [qrTicketStatus, setQrTicketStatus] = useState<string>('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -140,6 +144,30 @@ export default function EventDetailPage() {
             setTimeout(() => setShared(false), 2000);
         } catch { }
     }, [event]);
+
+    const fetchQrCode = useCallback(async () => {
+        if (!registrationId) return;
+        setQrLoading(true);
+        try {
+            const res = await fetch(`/api/tickets/${registrationId}/qrcode`);
+            if (res.ok) {
+                const data = await res.json();
+                setQrCodeImage(data.qrCodeImage);
+                setQrTicketStatus(data.status);
+            }
+        } catch (error) {
+            console.error('Erreur chargement QR code:', error);
+        } finally {
+            setQrLoading(false);
+        }
+    }, [registrationId]);
+
+    const handleShowQr = useCallback(() => {
+        setShowQrModal(true);
+        if (!qrCodeImage) {
+            fetchQrCode();
+        }
+    }, [qrCodeImage, fetchQrCode]);
 
     const spotsLeft = useMemo(() => event?.maxAttendees ? event.maxAttendees - event.currentAttendees : null, [event]);
     const isFull = useMemo(() => spotsLeft !== null && spotsLeft <= 0, [spotsLeft]);
@@ -504,6 +532,13 @@ export default function EventDetailPage() {
                                         Votre événement
                                     </div>
                                     <Link
+                                        href={`/dashboard/events/${event.id}/scan`}
+                                        className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3.5 rounded-xl font-bold hover:from-orange-600 hover:to-red-600 transition-all flex items-center justify-center gap-2 shadow-md"
+                                    >
+                                        <ScanLine className="h-4 w-4" />
+                                        Scanner les billets
+                                    </Link>
+                                    <Link
                                         href={`/events/${event.id}/participants`}
                                         className="w-full bg-sky-50 text-sky-700 py-3.5 rounded-xl font-bold hover:bg-sky-100 transition-all flex items-center justify-center gap-2 border border-sky-200"
                                     >
@@ -524,10 +559,28 @@ export default function EventDetailPage() {
                                         <Check className="h-5 w-5" />
                                         Inscrit
                                     </div>
+                                    {registrationId && (
+                                        <button
+                                            onClick={handleShowQr}
+                                            className="w-full bg-gradient-to-r from-violet-500 to-purple-600 text-white py-3.5 rounded-xl font-bold hover:from-violet-600 hover:to-purple-700 transition-all flex items-center justify-center gap-2 shadow-md"
+                                        >
+                                            <QrCode className="h-4 w-4" />
+                                            Mon billet QR
+                                        </button>
+                                    )}
+                                    {registrationId && (
+                                        <button
+                                            onClick={() => window.open(`/api/tickets/${registrationId}`, '_blank')}
+                                            className="w-full bg-sky-50 text-sky-700 py-3.5 rounded-xl font-bold hover:bg-sky-100 transition-all flex items-center justify-center gap-2 border border-sky-200"
+                                        >
+                                            <Download className="h-4 w-4" />
+                                            Télécharger le billet PDF
+                                        </button>
+                                    )}
                                     {event.type === 'paid' && event.price && registrationId && (
                                         <button
                                             onClick={() => window.open(`/api/registrations/${registrationId}/invoice`, '_blank')}
-                                            className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3.5 rounded-xl font-bold hover:from-emerald-600 hover:to-green-700 transition-all shadow-md border border-emerald-400"
+                                            className="w-full inline-flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 py-3.5 rounded-xl font-bold hover:bg-emerald-100 transition-all border border-emerald-200"
                                         >
                                             <FileText className="h-4 w-4" />
                                             Télécharger la facture
@@ -535,7 +588,7 @@ export default function EventDetailPage() {
                                     )}
                                     <Link
                                         href={`/events/${event.id}/participants`}
-                                        className="w-full bg-sky-50 text-sky-700 py-3.5 rounded-xl font-bold hover:bg-sky-100 transition-all flex items-center justify-center gap-2 border border-sky-200"
+                                        className="w-full bg-gray-50 text-gray-700 py-3.5 rounded-xl font-bold hover:bg-gray-100 transition-all flex items-center justify-center gap-2 border border-gray-200"
                                     >
                                         <Users className="h-4 w-4" />
                                         Voir les participants ({event.currentAttendees})
@@ -601,8 +654,8 @@ export default function EventDetailPage() {
                                     }}
                                     disabled={goodEveningDone || goodEveningLoading}
                                     className={`w-full mt-3 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-2 ${goodEveningDone
-                                            ? 'bg-pink-50 border-pink-200 text-pink-700'
-                                            : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-transparent hover:from-pink-600 hover:to-rose-600 shadow-md'
+                                        ? 'bg-pink-50 border-pink-200 text-pink-700'
+                                        : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-transparent hover:from-pink-600 hover:to-rose-600 shadow-md'
                                         } disabled:opacity-70`}
                                 >
                                     {goodEveningLoading ? (
@@ -636,6 +689,85 @@ export default function EventDetailPage() {
                     <div className="flex items-center justify-center gap-2">
                         <XCircle className="h-5 w-5" />
                         Cet événement a été annulé
+                    </div>
+                </div>
+            )}
+
+            {/* Modal QR Code */}
+            {showQrModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/50" onClick={() => setShowQrModal(false)} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+                        <button
+                            onClick={() => setShowQrModal(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <XCircle className="h-6 w-6" />
+                        </button>
+
+                        <div className="text-center mb-6">
+                            <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                <QrCode className="h-7 w-7 text-violet-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900">Mon billet</h3>
+                            <p className="text-sm text-gray-500 mt-1">Présentez ce QR code à l'entrée</p>
+                        </div>
+
+                        {qrLoading ? (
+                            <div className="flex flex-col items-center py-8">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mb-4"></div>
+                                <p className="text-gray-500 text-sm">Chargement du QR code...</p>
+                            </div>
+                        ) : qrCodeImage ? (
+                            <div className="flex flex-col items-center">
+                                <div className="bg-white p-4 rounded-xl border-2 border-gray-100 shadow-inner mb-4">
+                                    <img src={qrCodeImage} alt="QR Code billet" className="w-56 h-56" />
+                                </div>
+
+                                {qrTicketStatus === 'VALID' && (
+                                    <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg text-sm font-bold mb-4">
+                                        <Check className="h-4 w-4" />
+                                        Billet valide
+                                    </div>
+                                )}
+                                {qrTicketStatus === 'USED' && (
+                                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-bold mb-4">
+                                        <Check className="h-4 w-4" />
+                                        Billet déjà utilisé
+                                    </div>
+                                )}
+                                {qrTicketStatus === 'CANCELLED' && (
+                                    <div className="flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm font-bold mb-4">
+                                        <XCircle className="h-4 w-4" />
+                                        Billet annulé
+                                    </div>
+                                )}
+
+                                <p className="text-xs text-gray-400 text-center mb-4">
+                                    {event?.title}
+                                </p>
+
+                                <div className="flex gap-2 w-full">
+                                    <button
+                                        onClick={() => window.open(`/api/tickets/${registrationId}`, '_blank')}
+                                        className="flex-1 flex items-center justify-center gap-2 bg-violet-50 text-violet-700 py-3 rounded-xl font-bold hover:bg-violet-100 transition-all text-sm border border-violet-200"
+                                    >
+                                        <Download className="h-4 w-4" />
+                                        Billet PDF
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-8">
+                                <p className="text-gray-500 text-sm">Impossible de charger le QR code</p>
+                                <button
+                                    onClick={fetchQrCode}
+                                    className="mt-3 text-violet-600 font-bold text-sm hover:underline"
+                                >
+                                    Réessayer
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

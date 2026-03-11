@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Mail, Calendar, MapPin, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Mail, Calendar, MapPin, ArrowLeft, QrCode, Download } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Event } from 'shared';
 
@@ -15,6 +15,8 @@ export default function RegistrationSuccessPage() {
     const [fullAddress, setFullAddress] = useState<string>('');
     const [loadingAddress, setLoadingAddress] = useState(false);
     const [registrationId, setRegistrationId] = useState<string>('');
+    const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
+    const [qrLoading, setQrLoading] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -27,6 +29,9 @@ export default function RegistrationSuccessPage() {
 
             // Récupérer l'ID d'inscription depuis sessionStorage
             const registrationId = sessionStorage.getItem('registrationId');
+            if (registrationId) {
+                setRegistrationId(registrationId);
+            }
 
             // Récupérer les détails de l'événement
             try {
@@ -56,6 +61,22 @@ export default function RegistrationSuccessPage() {
                             console.error('Error fetching address:', error);
                         } finally {
                             setLoadingAddress(false);
+                        }
+                    }
+
+                    // Récupérer le QR code du billet
+                    if (registrationId) {
+                        setQrLoading(true);
+                        try {
+                            const qrRes = await fetch(`/api/tickets/${registrationId}/qrcode`);
+                            if (qrRes.ok) {
+                                const qrData = await qrRes.json();
+                                setQrCodeImage(qrData.qrCodeImage);
+                            }
+                        } catch (error) {
+                            console.error('Error fetching QR code:', error);
+                        } finally {
+                            setQrLoading(false);
                         }
                     }
                 }
@@ -121,6 +142,45 @@ export default function RegistrationSuccessPage() {
                                 </div>
                             </div>
                         </div>
+
+                        {/* QR Code du billet */}
+                        {registrationId && (
+                            <div className="bg-violet-50 rounded-2xl p-6 mb-8 border-2 border-violet-100">
+                                <div className="text-center">
+                                    <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                                        <QrCode className="h-7 w-7 text-violet-600" />
+                                    </div>
+                                    <h3 className="font-bold text-gray-900 text-lg mb-1">🎫 Votre billet</h3>
+                                    <p className="text-sm text-gray-500 mb-4">Présentez ce QR code à l'entrée de l'événement</p>
+
+                                    {qrLoading ? (
+                                        <div className="flex flex-col items-center py-4">
+                                            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-violet-500 mb-3"></div>
+                                            <p className="text-gray-500 text-sm">Génération du QR code...</p>
+                                        </div>
+                                    ) : qrCodeImage ? (
+                                        <div className="flex flex-col items-center">
+                                            <div className="bg-white p-4 rounded-xl border-2 border-gray-100 shadow-inner mb-4 inline-block">
+                                                <img src={qrCodeImage} alt="QR Code billet" className="w-48 h-48" />
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <a
+                                                    href={`/api/tickets/${registrationId}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-2 bg-violet-600 text-white px-5 py-2.5 rounded-lg hover:bg-violet-700 transition font-semibold text-sm"
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                    Télécharger le billet PDF
+                                                </a>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-500 text-sm">Le QR code sera disponible sur la page de l'événement</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Détails de l'événement */}
                         <div className="space-y-6">
