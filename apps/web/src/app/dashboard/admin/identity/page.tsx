@@ -40,7 +40,7 @@ export default function AdminIdentityPage() {
 
     const fetchRequests = async () => {
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const res = await fetch(`/api/admin/identity?status=${filter}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -66,7 +66,7 @@ export default function AdminIdentityPage() {
         setProcessing(true);
         setActionMessage('');
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const res = await fetch('/api/admin/identity', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -154,8 +154,8 @@ export default function AdminIdentityPage() {
                                 key={f.value}
                                 onClick={() => setFilter(f.value)}
                                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap ${isActive
-                                        ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg'
-                                        : 'bg-white text-gray-600 border border-gray-200 hover:border-sky-200 hover:bg-sky-50'
+                                    ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-lg'
+                                    : 'bg-white text-gray-600 border border-gray-200 hover:border-sky-200 hover:bg-sky-50'
                                     }`}
                             >
                                 <Icon className="h-4 w-4" />
@@ -221,8 +221,8 @@ export default function AdminIdentityPage() {
                                             </span>
                                         )}
                                         <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${req.identityStatus === 'pending' ? 'bg-amber-100 text-amber-700' :
-                                                req.identityStatus === 'verified' ? 'bg-emerald-100 text-emerald-700' :
-                                                    'bg-red-100 text-red-700'
+                                            req.identityStatus === 'verified' ? 'bg-emerald-100 text-emerald-700' :
+                                                'bg-red-100 text-red-700'
                                             }`}>
                                             {req.identityStatus === 'pending' ? 'En attente' :
                                                 req.identityStatus === 'verified' ? 'Vérifié' : 'Refusé'}

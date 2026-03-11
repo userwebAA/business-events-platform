@@ -37,7 +37,7 @@ export default function CreateEventPage() {
     useEffect(() => {
         const checkIdentity = async () => {
             try {
-                const token = sessionStorage.getItem('token');
+                const token = localStorage.getItem('token');
                 if (!token) { setCheckingIdentity(false); return; }
                 if (user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN') {
                     setIdentityStatus('verified');
@@ -78,7 +78,7 @@ export default function CreateEventPage() {
     useEffect(() => {
         const fetchMyEvents = async () => {
             try {
-                const token = sessionStorage.getItem('token');
+                const token = localStorage.getItem('token');
                 if (!token) return;
                 const res = await fetch('/api/events/my-events', {
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -135,7 +135,7 @@ export default function CreateEventPage() {
 
             console.log('📦 Données à envoyer:', eventData);
 
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const response = await fetch('/api/events', {
                 method: 'POST',
                 headers: {

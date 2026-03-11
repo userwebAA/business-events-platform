@@ -133,7 +133,7 @@ export default function MyPaymentsPage() {
 
     const fetchPayments = async () => {
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             if (!token) return;
             const res = await fetch('/api/organizer/payments', {
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -165,7 +165,7 @@ export default function MyPaymentsPage() {
         setMessage(null);
 
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const res = await fetch('/api/stripe/refund', {
                 method: 'POST',
                 headers: {

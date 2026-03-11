@@ -47,7 +47,7 @@ export default function AnalyticsPage() {
         if (isAdmin && events.length > 0) {
             const fetchRevenueData = async () => {
                 try {
-                    const token = sessionStorage.getItem('token');
+                    const token = localStorage.getItem('token');
                     const response = await fetch('/api/stats/revenue', {
                         headers: { 'Authorization': `Bearer ${token}` },
                     });
@@ -242,9 +242,9 @@ export default function AnalyticsPage() {
                                                 className="flex items-center gap-3 sm:gap-4 py-3 sm:py-4 first:pt-0 last:pb-0 group hover:bg-gray-50 -mx-2 px-2 rounded-xl transition-colors"
                                             >
                                                 <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${index === 0 ? 'bg-amber-100 text-amber-700' :
-                                                        index === 1 ? 'bg-gray-200 text-gray-600' :
-                                                            index === 2 ? 'bg-orange-100 text-orange-700' :
-                                                                'bg-gray-100 text-gray-400'
+                                                    index === 1 ? 'bg-gray-200 text-gray-600' :
+                                                        index === 2 ? 'bg-orange-100 text-orange-700' :
+                                                            'bg-gray-100 text-gray-400'
                                                     }`}>
                                                     #{index + 1}
                                                 </div>

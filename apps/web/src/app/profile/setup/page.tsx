@@ -45,7 +45,7 @@ export default function ProfileSetupPage() {
     useEffect(() => {
         const loadProfile = async () => {
             try {
-                const token = sessionStorage.getItem('token');
+                const token = localStorage.getItem('token');
                 if (!token) return;
                 const res = await fetch('/api/user/profile', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -110,13 +110,13 @@ export default function ProfileSetupPage() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
                 body: JSON.stringify(formData)
             });
             if (response.ok) {
                 await fetch('/api/auth/me', {
-                    headers: { 'Authorization': `Bearer ${sessionStorage.getItem('token')}` }
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 router.push('/events');
             }

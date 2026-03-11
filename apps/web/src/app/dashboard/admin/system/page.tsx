@@ -41,7 +41,7 @@ export default function SystemMonitoringPage() {
 
     const fetchStats = async () => {
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const res = await fetch('/api/admin/system-stats', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });

@@ -27,7 +27,7 @@ export default function NotificationCenter() {
     const fetchNotifications = useCallback(async () => {
         setLoading(true);
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             if (!token) return;
             const response = await fetch('/api/notifications', {
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -45,7 +45,7 @@ export default function NotificationCenter() {
 
     const fetchUnreadCount = useCallback(async () => {
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             if (!token) return;
             const response = await fetch('/api/notifications/unread-count', {
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -71,7 +71,7 @@ export default function NotificationCenter() {
 
     const markAsRead = async (notificationId: string) => {
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             await fetch(`/api/notifications/${notificationId}`, {
                 method: 'PUT',
                 headers: {
@@ -90,7 +90,7 @@ export default function NotificationCenter() {
 
     const markAllAsRead = async () => {
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             await fetch('/api/notifications', {
                 method: 'PUT',
                 headers: {
@@ -107,7 +107,7 @@ export default function NotificationCenter() {
 
     const deleteNotification = async (notificationId: string) => {
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             await fetch(`/api/notifications/${notificationId}`, {
                 method: 'DELETE',
                 headers: {
@@ -128,7 +128,7 @@ export default function NotificationCenter() {
 
     const deleteAllNotifications = async () => {
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             await fetch('/api/notifications/clear', {
                 method: 'DELETE',
                 headers: {
@@ -284,7 +284,7 @@ export default function NotificationCenter() {
                                                                 e.stopPropagation();
                                                                 const followUserId = notification.link!.split('/profile/')[1];
                                                                 if (!followUserId || followedBack.has(notification.id)) return;
-                                                                const token = sessionStorage.getItem('token');
+                                                                const token = localStorage.getItem('token');
                                                                 fetch(`/api/user/${followUserId}/follow`, {
                                                                     method: 'POST',
                                                                     headers: { 'Authorization': `Bearer ${token}` },
@@ -294,8 +294,8 @@ export default function NotificationCenter() {
                                                             }}
                                                             disabled={followedBack.has(notification.id)}
                                                             className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${followedBack.has(notification.id)
-                                                                    ? 'bg-sky-50 text-sky-600 border border-sky-200'
-                                                                    : 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm'
+                                                                ? 'bg-sky-50 text-sky-600 border border-sky-200'
+                                                                : 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm'
                                                                 }`}
                                                         >
                                                             <UserPlus className="h-3 w-3" />

@@ -47,7 +47,7 @@ export default function AdminUsersPage() {
         }
         const fetchUsers = async () => {
             try {
-                const token = sessionStorage.getItem('token');
+                const token = localStorage.getItem('token');
                 if (!token) return;
                 const res = await fetch('/api/admin/users', {
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -73,7 +73,7 @@ export default function AdminUsersPage() {
         setUpdating(userId);
         setOpenDropdown(null);
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const res = await fetch('/api/admin/users', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -94,7 +94,7 @@ export default function AdminUsersPage() {
         if (!deleteConfirm) return;
         setDeleting(true);
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const res = await fetch('/api/admin/users', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

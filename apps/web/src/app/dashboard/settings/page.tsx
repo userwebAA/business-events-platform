@@ -68,7 +68,7 @@ export default function SettingsPage() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = sessionStorage.getItem('token');
+                const token = localStorage.getItem('token');
                 const [profileRes, identityRes, stripeRes] = await Promise.all([
                     fetch('/api/user/profile', { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch('/api/user/identity', { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -170,7 +170,7 @@ export default function SettingsPage() {
 
             setUploadingVideo(true);
             try {
-                const token = sessionStorage.getItem('token');
+                const token = localStorage.getItem('token');
                 console.log('🎥 Début upload vidéo:', {
                     fileName: file.name,
                     fileSize: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
@@ -210,7 +210,7 @@ export default function SettingsPage() {
 
     const handleVideoDelete = async () => {
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const res = await fetch('/api/user/profile-video', {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -238,7 +238,7 @@ export default function SettingsPage() {
         setSaving(true);
         setSaved(false);
         try {
-            const token = sessionStorage.getItem('token');
+            const token = localStorage.getItem('token');
             const response = await fetch('/api/user/profile', {
                 method: 'PUT',
                 headers: {
@@ -832,7 +832,7 @@ export default function SettingsPage() {
                                                                         }
                                                                         setChangingPassword(true);
                                                                         try {
-                                                                            const token = sessionStorage.getItem('token');
+                                                                            const token = localStorage.getItem('token');
                                                                             const res = await fetch('/api/user/change-password', {
                                                                                 method: 'PUT',
                                                                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -948,7 +948,7 @@ export default function SettingsPage() {
                                                                                 setIdentityError('');
                                                                                 setIdentityMessage('');
                                                                                 try {
-                                                                                    const token = sessionStorage.getItem('token');
+                                                                                    const token = localStorage.getItem('token');
                                                                                     const res = await fetch('/api/user/identity', {
                                                                                         method: 'POST',
                                                                                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -1041,7 +1041,7 @@ export default function SettingsPage() {
                                                                                 setIdentityError('');
                                                                                 setIdentityMessage('');
                                                                                 try {
-                                                                                    const token = sessionStorage.getItem('token');
+                                                                                    const token = localStorage.getItem('token');
                                                                                     await fetch('/api/user/identity', {
                                                                                         method: 'POST',
                                                                                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -1099,7 +1099,7 @@ export default function SettingsPage() {
                                                                     setStripeLoading(true);
                                                                     setStripeError('');
                                                                     try {
-                                                                        const token = sessionStorage.getItem('token');
+                                                                        const token = localStorage.getItem('token');
                                                                         const res = await fetch('/api/stripe/connect', {
                                                                             method: 'POST',
                                                                             headers: { 'Authorization': `Bearer ${token}` },
@@ -1132,7 +1132,7 @@ export default function SettingsPage() {
                                                                     setStripeLoading(true);
                                                                     setStripeError('');
                                                                     try {
-                                                                        const token = sessionStorage.getItem('token');
+                                                                        const token = localStorage.getItem('token');
                                                                         const res = await fetch('/api/stripe/connect', {
                                                                             method: 'POST',
                                                                             headers: { 'Authorization': `Bearer ${token}` },
@@ -1199,7 +1199,7 @@ export default function SettingsPage() {
                                                                         if (!deletePassword) { setDeleteError('Veuillez entrer votre mot de passe'); return; }
                                                                         setDeleting(true);
                                                                         try {
-                                                                            const token = sessionStorage.getItem('token');
+                                                                            const token = localStorage.getItem('token');
                                                                             const res = await fetch('/api/user/delete-account', {
                                                                                 method: 'DELETE',
                                                                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
