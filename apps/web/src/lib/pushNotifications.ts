@@ -35,7 +35,7 @@ export const subscribeToPushNotifications = async (): Promise<PushSubscription |
             applicationServerKey: convertedVapidKey as BufferSource,
         });
 
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) {
             console.error('Token manquant');
             return null;
@@ -73,7 +73,7 @@ export const unsubscribeFromPushNotifications = async (): Promise<boolean> => {
             return true;
         }
 
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (token) {
             await fetch('/api/notifications/subscribe', {
                 method: 'DELETE',

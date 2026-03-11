@@ -40,7 +40,7 @@ export default function AdminIdentityPage() {
 
     const fetchRequests = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch(`/api/admin/identity?status=${filter}`, {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -66,7 +66,7 @@ export default function AdminIdentityPage() {
         setProcessing(true);
         setActionMessage('');
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch('/api/admin/identity', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

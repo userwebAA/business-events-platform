@@ -13,6 +13,25 @@ interface TicketData {
     registrationId: string;
 }
 
+// Remplacer les caractères accentués par leurs équivalents ASCII
+function sanitizeText(text: string): string {
+    if (!text) return '';
+    return text
+        .replace(/[àâä]/g, 'a')
+        .replace(/[éèêë]/g, 'e')
+        .replace(/[îï]/g, 'i')
+        .replace(/[ôö]/g, 'o')
+        .replace(/[ùûü]/g, 'u')
+        .replace(/[ç]/g, 'c')
+        .replace(/[ÀÂÄÁ]/g, 'A')
+        .replace(/[ÉÈÊË]/g, 'E')
+        .replace(/[ÎÏ]/g, 'I')
+        .replace(/[ÔÖ]/g, 'O')
+        .replace(/[ÙÛÜÚ]/g, 'U')
+        .replace(/[Ç]/g, 'C')
+        .replace(/[^\x20-\x7E]/g, ''); // Supprimer tout caractère non-ASCII restant
+}
+
 export async function generateTicketPDF(ticketData: TicketData): Promise<Buffer> {
     try {
         // Créer un nouveau document PDF
@@ -39,7 +58,7 @@ export async function generateTicketPDF(ticketData: TicketData): Promise<Buffer>
         });
 
         // Titre
-        page.drawText('🎫 BILLET', {
+        page.drawText('BILLET D\'ENTREE', {
             x: width / 2 - 80,
             y: height - 70,
             size: 32,
@@ -48,7 +67,7 @@ export async function generateTicketPDF(ticketData: TicketData): Promise<Buffer>
         });
 
         // Nom de l'événement
-        const titleLines = splitText(ticketData.eventTitle, 50);
+        const titleLines = splitText(sanitizeText(ticketData.eventTitle), 50);
         titleLines.forEach((line, index) => {
             page.drawText(line, {
                 x: 50,
@@ -72,14 +91,14 @@ export async function generateTicketPDF(ticketData: TicketData): Promise<Buffer>
         let yPosition = height - 220;
 
         // Date et heure
-        page.drawText('📅 Date et heure', {
+        page.drawText('Date et heure', {
             x: 50,
             y: yPosition,
             size: 14,
             font: fontBold,
             color: rgb(0, 0, 0),
         });
-        page.drawText(formattedDate, {
+        page.drawText(sanitizeText(formattedDate), {
             x: 50,
             y: yPosition - 20,
             size: 12,
@@ -90,21 +109,21 @@ export async function generateTicketPDF(ticketData: TicketData): Promise<Buffer>
         yPosition -= 60;
 
         // Lieu
-        page.drawText('📍 Lieu', {
+        page.drawText('Lieu', {
             x: 50,
             y: yPosition,
             size: 14,
             font: fontBold,
             color: rgb(0, 0, 0),
         });
-        page.drawText(ticketData.eventLocation, {
+        page.drawText(sanitizeText(ticketData.eventLocation), {
             x: 50,
             y: yPosition - 20,
             size: 12,
             font: font,
             color: rgb(0, 0, 0),
         });
-        page.drawText(ticketData.eventAddress, {
+        page.drawText(sanitizeText(ticketData.eventAddress), {
             x: 50,
             y: yPosition - 40,
             size: 10,
@@ -115,21 +134,21 @@ export async function generateTicketPDF(ticketData: TicketData): Promise<Buffer>
         yPosition -= 80;
 
         // Participant
-        page.drawText('👤 Participant', {
+        page.drawText('Participant', {
             x: 50,
             y: yPosition,
             size: 14,
             font: fontBold,
             color: rgb(0, 0, 0),
         });
-        page.drawText(ticketData.attendeeName, {
+        page.drawText(sanitizeText(ticketData.attendeeName), {
             x: 50,
             y: yPosition - 20,
             size: 12,
             font: font,
             color: rgb(0, 0, 0),
         });
-        page.drawText(ticketData.attendeeEmail, {
+        page.drawText(sanitizeText(ticketData.attendeeEmail), {
             x: 50,
             y: yPosition - 40,
             size: 10,
@@ -146,7 +165,7 @@ export async function generateTicketPDF(ticketData: TicketData): Promise<Buffer>
             height: qrSize,
         });
 
-        page.drawText('Scannez ce QR code à l\'entrée', {
+        page.drawText('Scannez ce QR code a l\'entree', {
             x: width - qrSize - 50 + 10,
             y: height - 220 - qrSize - 20,
             size: 10,
@@ -155,7 +174,7 @@ export async function generateTicketPDF(ticketData: TicketData): Promise<Buffer>
         });
 
         // Footer
-        page.drawText('💡 Conseil : Présentez ce billet (imprimé ou sur votre téléphone) à l\'entrée.', {
+        page.drawText('Conseil : Presentez ce billet (imprime ou sur votre telephone) a l\'entree.', {
             x: 50,
             y: 100,
             size: 10,
@@ -171,7 +190,7 @@ export async function generateTicketPDF(ticketData: TicketData): Promise<Buffer>
             color: rgb(0.6, 0.6, 0.6),
         });
 
-        page.drawText('Business Events - Votre plateforme d\'événements professionnels', {
+        page.drawText('Business Events - Votre plateforme d\'evenements professionnels', {
             x: 50,
             y: 40,
             size: 8,

@@ -133,7 +133,7 @@ export default function AdminTreasuryPage() {
 
     const fetchTreasury = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch('/api/stats/treasury', {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -154,7 +154,7 @@ export default function AdminTreasuryPage() {
 
     const fetchStripeAccounts = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch('/api/admin/stripe-accounts', {
                 headers: { 'Authorization': `Bearer ${token}` },
             });
@@ -183,7 +183,7 @@ export default function AdminTreasuryPage() {
         setStripeActionLoading(`${userId}-${action}`);
         setStripeMessage(null);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch('/api/admin/stripe-accounts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -221,7 +221,7 @@ export default function AdminTreasuryPage() {
         setRefundingId(paymentId);
         setRefundMessage(null);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch('/api/stripe/refund', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

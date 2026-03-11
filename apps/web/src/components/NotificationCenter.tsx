@@ -27,7 +27,7 @@ export default function NotificationCenter() {
     const fetchNotifications = useCallback(async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) return;
             const response = await fetch('/api/notifications', {
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -45,7 +45,7 @@ export default function NotificationCenter() {
 
     const fetchUnreadCount = useCallback(async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) return;
             const response = await fetch('/api/notifications/unread-count', {
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -71,7 +71,7 @@ export default function NotificationCenter() {
 
     const markAsRead = async (notificationId: string) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             await fetch(`/api/notifications/${notificationId}`, {
                 method: 'PUT',
                 headers: {
@@ -90,7 +90,7 @@ export default function NotificationCenter() {
 
     const markAllAsRead = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             await fetch('/api/notifications', {
                 method: 'PUT',
                 headers: {
@@ -107,7 +107,7 @@ export default function NotificationCenter() {
 
     const deleteNotification = async (notificationId: string) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             await fetch(`/api/notifications/${notificationId}`, {
                 method: 'DELETE',
                 headers: {
@@ -128,7 +128,7 @@ export default function NotificationCenter() {
 
     const deleteAllNotifications = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             await fetch('/api/notifications/clear', {
                 method: 'DELETE',
                 headers: {
@@ -284,7 +284,7 @@ export default function NotificationCenter() {
                                                                 e.stopPropagation();
                                                                 const followUserId = notification.link!.split('/profile/')[1];
                                                                 if (!followUserId || followedBack.has(notification.id)) return;
-                                                                const token = localStorage.getItem('token');
+                                                                const token = sessionStorage.getItem('token');
                                                                 fetch(`/api/user/${followUserId}/follow`, {
                                                                     method: 'POST',
                                                                     headers: { 'Authorization': `Bearer ${token}` },

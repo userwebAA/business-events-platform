@@ -19,7 +19,7 @@ export default function MyEventsPage() {
         const fetchEvents = async () => {
             setLoading(true);
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 if (!token) return;
                 const response = await fetch('/api/events/my-events', {
                     headers: { 'Authorization': `Bearer ${token}` },

@@ -75,7 +75,7 @@ export default function EventsPage() {
         try {
             const now = new Date();
             // Priorité : charger depuis la DB si connecté
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (token) {
                 const res = await fetch('/api/user/registrations', {
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -112,7 +112,7 @@ export default function EventsPage() {
 
     const fetchMyEvents = useCallback(async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (!token) return;
             const response = await fetch('/api/events/my-events', {
                 headers: { 'Authorization': `Bearer ${token}` },

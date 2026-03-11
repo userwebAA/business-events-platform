@@ -27,7 +27,7 @@ export default function DashboardPage() {
         setSeedLoading(true);
         setSeedMessage(null);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch('/api/admin/seed', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -50,7 +50,7 @@ export default function DashboardPage() {
         setSeedLoading(true);
         setSeedMessage(null);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch('/api/admin/seed', {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` },
@@ -72,7 +72,7 @@ export default function DashboardPage() {
     const handleToggleFeatured = async (eventId: string) => {
         setFeatureLoading(eventId);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch('/api/admin/featured', {
                 method: 'PUT',
                 headers: {
@@ -110,7 +110,7 @@ export default function DashboardPage() {
     const fetchRegisteredEvents = useCallback(async () => {
         try {
             // Priorité : charger depuis la DB si connecté
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             if (token) {
                 const res = await fetch('/api/user/registrations', {
                     headers: { 'Authorization': `Bearer ${token}` },
@@ -142,7 +142,7 @@ export default function DashboardPage() {
 
     const fetchRevenue = useCallback(async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const response = await fetch('/api/stats/revenue', {
                 headers: { 'Authorization': `Bearer ${token}` },
             });

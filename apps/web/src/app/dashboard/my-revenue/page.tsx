@@ -60,7 +60,7 @@ export default function MyRevenuePage() {
 
     const fetchRevenue = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const res = await fetch('/api/stats/treasury', {
                 headers: { 'Authorization': `Bearer ${token}` },
             });

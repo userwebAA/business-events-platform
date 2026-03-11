@@ -568,16 +568,6 @@ export default function EventDetailPage() {
                                             Mon billet QR
                                         </button>
                                     )}
-                                    {registrationId && (
-                                        <a
-                                            href={`/api/tickets/${registrationId}`}
-                                            download
-                                            className="w-full bg-sky-50 text-sky-700 py-3.5 rounded-xl font-bold hover:bg-sky-100 transition-all flex items-center justify-center gap-2 border border-sky-200 text-sm text-center"
-                                        >
-                                            <Download className="h-4 w-4 flex-shrink-0" />
-                                            Télécharger le billet PDF
-                                        </a>
-                                    )}
                                     {event.type === 'paid' && event.price && registrationId && (
                                         <a
                                             href={`/api/registrations/${registrationId}/invoice`}
