@@ -35,6 +35,36 @@ export default function NotificationCenter() {
             if (response.ok) {
                 const data = await response.json();
                 setNotifications(data.notifications);
+
+                // Vérifier quels followers on suit déjà
+                const followerNotifs = (data.notifications as Notification[]).filter(
+                    (n) => n.type === 'NEW_FOLLOWER' && n.link
+                );
+                if (followerNotifs.length > 0) {
+                    const alreadyFollowing = new Set<string>();
+                    await Promise.all(
+                        followerNotifs.map(async (n) => {
+                            const followUserId = n.link!.split('/profile/')[1];
+                            if (!followUserId) return;
+                            try {
+                                const res = await fetch(`/api/user/${followUserId}/follow`, {
+                                    headers: { 'Authorization': `Bearer ${token}` },
+                                });
+                                if (res.ok) {
+                                    const d = await res.json();
+                                    if (d.isFollowing) alreadyFollowing.add(n.id);
+                                }
+                            } catch { }
+                        })
+                    );
+                    if (alreadyFollowing.size > 0) {
+                        setFollowedBack(prev => {
+                            const next = new Set(prev);
+                            alreadyFollowing.forEach(id => next.add(id));
+                            return next;
+                        });
+                    }
+                }
             }
         } catch (error) {
             console.error('Erreur chargement notifications:', error);
