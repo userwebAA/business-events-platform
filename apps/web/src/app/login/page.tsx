@@ -27,7 +27,7 @@ function LoginForm() {
         setLoading(true);
         try {
             await login(email, password);
-            const redirectTo = searchParams.get('redirect') || '/dashboard';
+            const redirectTo = searchParams.get('redirect') || '/events';
             router.push(redirectTo);
         } catch (err) {
             setError('Email ou mot de passe incorrect');

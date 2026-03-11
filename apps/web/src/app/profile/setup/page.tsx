@@ -38,7 +38,7 @@ export default function ProfileSetupPage() {
 
     useEffect(() => {
         if (user?.profileCompleted) {
-            router.push('/dashboard');
+            router.push('/events');
         }
     }, [user, router]);
 
@@ -118,7 +118,7 @@ export default function ProfileSetupPage() {
                 await fetch('/api/auth/me', {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
-                router.push('/dashboard');
+                router.push('/events');
             }
         } catch (error) {
             console.error('Erreur:', error);
@@ -181,18 +181,16 @@ export default function ProfileSetupPage() {
                                 const isCompleted = currentStep > step.id;
                                 return (
                                     <div key={step.id} className="flex flex-col items-center gap-2">
-                                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                                            isCompleted
-                                                ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-lg shadow-emerald-200'
-                                                : isActive
-                                                    ? 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-200'
-                                                    : 'bg-gray-100 text-gray-400'
-                                        }`}>
+                                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 ${isCompleted
+                                            ? 'bg-gradient-to-br from-emerald-400 to-emerald-500 text-white shadow-lg shadow-emerald-200'
+                                            : isActive
+                                                ? 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-200'
+                                                : 'bg-gray-100 text-gray-400'
+                                            }`}>
                                             {isCompleted ? <Check className="h-5 w-5" /> : <StepIcon className="h-5 w-5" />}
                                         </div>
-                                        <span className={`text-xs font-semibold transition-colors ${
-                                            isActive ? 'text-sky-600' : isCompleted ? 'text-emerald-600' : 'text-gray-400'
-                                        }`}>
+                                        <span className={`text-xs font-semibold transition-colors ${isActive ? 'text-sky-600' : isCompleted ? 'text-emerald-600' : 'text-gray-400'
+                                            }`}>
                                             {step.title}
                                         </span>
                                     </div>

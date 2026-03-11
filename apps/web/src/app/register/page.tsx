@@ -38,7 +38,7 @@ export default function RegisterPage() {
         setLoading(true);
         try {
             await register(email, password, name);
-            router.push('/dashboard');
+            router.push('/events');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Erreur lors de l\'inscription');
         } finally {

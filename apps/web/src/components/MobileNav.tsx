@@ -13,16 +13,16 @@ export default function MobileNav() {
 
     const navItems = [
         {
-            href: '/events',
-            label: 'Événements',
-            icon: Calendar,
-            isActive: pathname === '/events' || (pathname?.startsWith('/events/') ?? false),
-        },
-        {
             href: '/dashboard',
             label: 'Dashboard',
             icon: LayoutDashboard,
             isActive: pathname === '/dashboard' || (pathname?.startsWith('/dashboard/') ?? false),
+        },
+        {
+            href: '/events',
+            label: 'Événements',
+            icon: Calendar,
+            isActive: pathname === '/events' || (pathname?.startsWith('/events/') ?? false),
         },
         {
             href: `/profile/${user.id}`,
