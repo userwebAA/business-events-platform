@@ -150,6 +150,7 @@ export default function ScanTicketPage() {
                 body: JSON.stringify({
                     qrCode: qrCodeText,
                     markAsUsed: true,
+                    eventId,
                 }),
             });
 
