@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
@@ -11,9 +11,26 @@ function LoginForm() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [checkingSession, setCheckingSession] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { login } = useAuth();
+    const { login, user } = useAuth();
+
+    // Vérifier si l'utilisateur est déjà connecté
+    useEffect(() => {
+        const checkSession = async () => {
+            const token = localStorage.getItem('token');
+            if (token && user) {
+                // Session active, rediriger directement
+                const redirectTo = searchParams.get('redirect') || '/events';
+                router.push(redirectTo);
+            } else {
+                setCheckingSession(false);
+            }
+        };
+
+        checkSession();
+    }, [user, router, searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,6 +52,20 @@ function LoginForm() {
             setLoading(false);
         }
     };
+
+    // Écran de chargement pendant la vérification de session
+    if (checkingSession) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-sky-50">
+                <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 mb-4">
+                        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-sky-500"></div>
+                    </div>
+                    <p className="text-gray-600 font-medium">Vérification de la session...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen flex">
