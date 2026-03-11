@@ -569,22 +569,24 @@ export default function EventDetailPage() {
                                         </button>
                                     )}
                                     {registrationId && (
-                                        <button
-                                            onClick={() => window.open(`/api/tickets/${registrationId}`, '_blank')}
-                                            className="w-full bg-sky-50 text-sky-700 py-3.5 rounded-xl font-bold hover:bg-sky-100 transition-all flex items-center justify-center gap-2 border border-sky-200"
+                                        <a
+                                            href={`/api/tickets/${registrationId}`}
+                                            download
+                                            className="w-full bg-sky-50 text-sky-700 py-3.5 rounded-xl font-bold hover:bg-sky-100 transition-all flex items-center justify-center gap-2 border border-sky-200 text-sm text-center"
                                         >
-                                            <Download className="h-4 w-4" />
+                                            <Download className="h-4 w-4 flex-shrink-0" />
                                             Télécharger le billet PDF
-                                        </button>
+                                        </a>
                                     )}
                                     {event.type === 'paid' && event.price && registrationId && (
-                                        <button
-                                            onClick={() => window.open(`/api/registrations/${registrationId}/invoice`, '_blank')}
-                                            className="w-full inline-flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 py-3.5 rounded-xl font-bold hover:bg-emerald-100 transition-all border border-emerald-200"
+                                        <a
+                                            href={`/api/registrations/${registrationId}/invoice`}
+                                            download
+                                            className="w-full inline-flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 py-3.5 rounded-xl font-bold hover:bg-emerald-100 transition-all border border-emerald-200 text-sm text-center"
                                         >
-                                            <FileText className="h-4 w-4" />
+                                            <FileText className="h-4 w-4 flex-shrink-0" />
                                             Télécharger la facture
-                                        </button>
+                                        </a>
                                     )}
                                     <Link
                                         href={`/events/${event.id}/participants`}
@@ -748,13 +750,14 @@ export default function EventDetailPage() {
                                 </p>
 
                                 <div className="flex gap-2 w-full">
-                                    <button
-                                        onClick={() => window.open(`/api/tickets/${registrationId}`, '_blank')}
+                                    <a
+                                        href={`/api/tickets/${registrationId}`}
+                                        download
                                         className="flex-1 flex items-center justify-center gap-2 bg-violet-50 text-violet-700 py-3 rounded-xl font-bold hover:bg-violet-100 transition-all text-sm border border-violet-200"
                                     >
-                                        <Download className="h-4 w-4" />
+                                        <Download className="h-4 w-4 flex-shrink-0" />
                                         Billet PDF
-                                    </button>
+                                    </a>
                                 </div>
                             </div>
                         ) : (

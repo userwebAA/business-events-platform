@@ -166,11 +166,10 @@ export default function RegistrationSuccessPage() {
                                             <div className="flex gap-2">
                                                 <a
                                                     href={`/api/tickets/${registrationId}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                    download
                                                     className="inline-flex items-center gap-2 bg-violet-600 text-white px-5 py-2.5 rounded-lg hover:bg-violet-700 transition font-semibold text-sm"
                                                 >
-                                                    <Download className="h-4 w-4" />
+                                                    <Download className="h-4 w-4 flex-shrink-0" />
                                                     Télécharger le billet PDF
                                                 </a>
                                             </div>
