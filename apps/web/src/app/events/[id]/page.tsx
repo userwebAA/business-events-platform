@@ -452,6 +452,30 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Bouton Ajouter à Google Agenda */}
+                            {!isCancelled && event.date && new Date(event.date) > new Date() && (
+                                <a
+                                    href={(() => {
+                                        const start = new Date(event.date);
+                                        const end = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+                                        const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                                        return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${fmt(start)}/${fmt(end)}&location=${encodeURIComponent(event.location || '')}&details=${encodeURIComponent(event.description?.substring(0, 500) || '')}`;
+                                    })()}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-gradient-to-r from-sky-50 to-blue-50 border-2 border-sky-200 rounded-xl hover:from-sky-100 hover:to-blue-100 hover:border-sky-300 transition-all group"
+                                >
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm group-hover:shadow-md transition-shadow">
+                                        <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-sky-600" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-sm font-bold text-sky-900">Ajouter à mon agenda</p>
+                                        <p className="text-xs text-sky-600">Google Calendar</p>
+                                    </div>
+                                    <ChevronRight className="h-5 w-5 text-sky-400 group-hover:translate-x-1 transition-transform" />
+                                </a>
+                            )}
                         </div>
                     </div>
 
@@ -628,24 +652,6 @@ export default function EventDetailPage() {
                                     </>
                                 )}
                             </button>
-
-                            {/* Bouton Ajouter à Google Agenda */}
-                            {event && !isCancelled && event.date && new Date(event.date) > new Date() && (
-                                <a
-                                    href={(() => {
-                                        const start = new Date(event.date);
-                                        const end = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
-                                        const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-                                        return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${fmt(start)}/${fmt(end)}&location=${encodeURIComponent(event.location || '')}&details=${encodeURIComponent(event.description?.substring(0, 500) || '')}`;
-                                    })()}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full mt-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-2 bg-white border-gray-200 text-gray-700 hover:bg-sky-50 hover:border-sky-200 hover:text-sky-700"
-                                >
-                                    <Calendar className="h-4 w-4" />
-                                    Ajouter à Google Agenda
-                                </a>
-                            )}
 
                             {/* Bouton "Bonne soirée" (événement passé, inscrit ou organisateur) */}
                             {(isRegistered || isOrganizer) && !isCancelled && event?.date && new Date(event.date) < new Date() && (

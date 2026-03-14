@@ -56,8 +56,8 @@ export async function POST(
             ? `${baseUrl}/events/private/${event.accessToken}`
             : `${baseUrl}/events/${event.id}`;
 
-        // Envoyer les emails en parallèle (par lots de 5)
-        const batchSize = 5;
+        // Envoyer les emails en parallèle (par lots de 20 pour supporter 100+ destinataires)
+        const batchSize = 20;
         let sent = 0;
         let failed = 0;
 
