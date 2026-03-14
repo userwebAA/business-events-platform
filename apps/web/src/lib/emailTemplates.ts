@@ -1,4 +1,6 @@
 import { transporter } from './email';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface EmailData {
   attendeeName: string;
@@ -713,6 +715,219 @@ export async function sendEventInvitationEmail(params: EventInvitationParams) {
     return { success: true };
   } catch (error) {
     console.error('❌ Erreur envoi invitation:', error);
+    return { success: false, error };
+  }
+}
+
+// Email de rappel 1 semaine avant l'événement
+export async function sendEventReminderEmail({
+  to,
+  attendeeName,
+  eventTitle,
+  eventDate,
+  eventLocation,
+  eventAddress,
+  eventUrl,
+}: {
+  to: string;
+  attendeeName: string;
+  eventTitle: string;
+  eventDate: Date;
+  eventLocation: string;
+  eventAddress?: string;
+  eventUrl: string;
+}) {
+  const formattedDate = format(new Date(eventDate), "EEEE d MMMM yyyy 'à' HH'h'mm", { locale: fr });
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || 'noreply@taff.com',
+    to,
+    subject: `⏰ Rappel : ${eventTitle} dans 1 semaine !`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f3f4f6;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <tr>
+            <td style="padding: 0;">
+              <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 40px 30px; border-radius: 16px 16px 0 0; text-align: center;">
+                <div style="background-color: rgba(255, 255, 255, 0.2); width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                  <span style="font-size: 48px;">⏰</span>
+                </div>
+                <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">Rappel : Plus qu'une semaine !</h1>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Bonjour <strong>${attendeeName}</strong>,
+              </p>
+              <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
+                L'événement <strong>${eventTitle}</strong> aura lieu dans <strong style="color: #f59e0b;">une semaine</strong> ! 
+                Nous avons hâte de vous y retrouver.
+              </p>
+
+              <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-left: 4px solid #f59e0b; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                <h2 style="margin: 0 0 15px; color: #92400e; font-size: 20px; font-weight: bold;">📅 Détails de l'événement</h2>
+                <p style="margin: 0 0 10px; color: #92400e; font-size: 15px;">
+                  <strong>📍 Lieu :</strong> ${eventLocation}
+                </p>
+                ${eventAddress ? `<p style="margin: 0 0 10px; color: #92400e; font-size: 14px;">${eventAddress}</p>` : ''}
+                <p style="margin: 0; color: #92400e; font-size: 15px;">
+                  <strong>🕐 Date :</strong> ${formattedDate}
+                </p>
+              </div>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${eventUrl}" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.3);">
+                  Voir les détails de l'événement
+                </a>
+              </div>
+
+              <p style="margin: 30px 0 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                À très bientôt ! 🎉
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 30px; background-color: #f9fafb; border-radius: 0 0 16px 16px; text-align: center;">
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                Cet email est un rappel automatique pour votre inscription à l'événement.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('✅ Email de rappel envoyé à:', to);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Erreur envoi rappel:', error);
+    return { success: false, error };
+  }
+}
+
+// Email de notification de modification d'événement
+export async function sendEventUpdateNotificationEmail({
+  to,
+  attendeeName,
+  eventTitle,
+  eventDate,
+  eventLocation,
+  eventUrl,
+  changes,
+}: {
+  to: string;
+  attendeeName: string;
+  eventTitle: string;
+  eventDate: Date;
+  eventLocation: string;
+  eventUrl: string;
+  changes: string;
+}) {
+  const formattedDate = format(new Date(eventDate), "EEEE d MMMM yyyy 'à' HH'h'mm", { locale: fr });
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || 'noreply@taff.com',
+    to,
+    subject: `🔔 Modification : ${eventTitle}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f3f4f6;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <tr>
+            <td style="padding: 0;">
+              <div style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 40px 30px; border-radius: 16px 16px 0 0; text-align: center;">
+                <div style="background-color: rgba(255, 255, 255, 0.2); width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                  <span style="font-size: 48px;">🔔</span>
+                </div>
+                <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">Événement modifié</h1>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="margin: 0 0 20px; color: #374151; font-size: 16px; line-height: 1.6;">
+                Bonjour <strong>${attendeeName}</strong>,
+              </p>
+              <p style="margin: 0 0 30px; color: #374151; font-size: 16px; line-height: 1.6;">
+                L'événement <strong>${eventTitle}</strong> auquel vous êtes inscrit(e) a été modifié par l'organisateur.
+              </p>
+
+              <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-left: 4px solid #3b82f6; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                <h2 style="margin: 0 0 15px; color: #1e40af; font-size: 18px; font-weight: bold;">📝 Modifications apportées</h2>
+                <p style="margin: 0; color: #1e40af; font-size: 15px; line-height: 1.6; white-space: pre-line;">
+                  ${changes}
+                </p>
+              </div>
+
+              <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                <h2 style="margin: 0 0 15px; color: #374151; font-size: 18px; font-weight: bold;">📅 Informations actuelles</h2>
+                <p style="margin: 0 0 10px; color: #374151; font-size: 15px;">
+                  <strong>📍 Lieu :</strong> ${eventLocation}
+                </p>
+                <p style="margin: 0; color: #374151; font-size: 15px;">
+                  <strong>🕐 Date :</strong> ${formattedDate}
+                </p>
+              </div>
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${eventUrl}" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 12px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);">
+                  Voir les détails complets
+                </a>
+              </div>
+
+              <p style="margin: 30px 0 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
+                Si vous avez des questions, n'hésitez pas à contacter l'organisateur.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 20px 30px; background-color: #f9fafb; border-radius: 0 0 16px 16px; text-align: center;">
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                Vous recevez cet email car vous êtes inscrit(e) à cet événement.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('✅ Email de modification envoyé à:', to);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Erreur envoi notification modification:', error);
     return { success: false, error };
   }
 }
