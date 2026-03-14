@@ -572,17 +572,21 @@ export default function EventDetailPage() {
                                     </Link>
                                     <Link
                                         href={`/events/${event.id}/participants`}
-                                        className="w-full bg-sky-50 text-sky-700 py-3.5 rounded-xl font-bold hover:bg-sky-100 transition-all flex items-center justify-center gap-2 border border-sky-200"
+                                        className="w-full bg-gradient-to-r from-sky-50 to-blue-50 text-sky-700 py-4 sm:py-5 rounded-xl font-bold hover:from-sky-100 hover:to-blue-100 transition-all flex items-center justify-center gap-3 border-2 border-sky-200 hover:border-sky-300 shadow-sm hover:shadow-md group"
                                     >
-                                        <Users className="h-4 w-4" />
-                                        Voir les participants ({event.currentAttendees})
+                                        <div className="bg-white p-2 rounded-lg shadow-sm group-hover:shadow transition-shadow">
+                                            <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                                        </div>
+                                        <span className="text-base sm:text-lg">Voir les participants ({event.currentAttendees})</span>
                                     </Link>
                                     <Link
                                         href="/dashboard/my-payments"
-                                        className="w-full bg-amber-50 text-amber-700 py-3.5 rounded-xl font-bold hover:bg-amber-100 transition-all flex items-center justify-center gap-2 border border-amber-200"
+                                        className="w-full bg-gradient-to-r from-amber-50 to-orange-50 text-amber-700 py-4 sm:py-5 rounded-xl font-bold hover:from-amber-100 hover:to-orange-100 transition-all flex items-center justify-center gap-3 border-2 border-amber-200 hover:border-amber-300 shadow-sm hover:shadow-md group"
                                     >
-                                        <Euro className="h-4 w-4" />
-                                        Tableau de bord paiements
+                                        <div className="bg-white p-2 rounded-lg shadow-sm group-hover:shadow transition-shadow">
+                                            <Euro className="h-5 w-5 sm:h-6 sm:w-6" />
+                                        </div>
+                                        <span className="text-base sm:text-lg">Tableau de bord paiements</span>
                                     </Link>
                                 </div>
                             ) : isRegistered ? (
@@ -612,10 +616,12 @@ export default function EventDetailPage() {
                                     )}
                                     <Link
                                         href={`/events/${event.id}/participants`}
-                                        className="w-full bg-gray-50 text-gray-700 py-3.5 rounded-xl font-bold hover:bg-gray-100 transition-all flex items-center justify-center gap-2 border border-gray-200"
+                                        className="w-full bg-gradient-to-r from-gray-50 to-slate-50 text-gray-700 py-4 sm:py-5 rounded-xl font-bold hover:from-gray-100 hover:to-slate-100 transition-all flex items-center justify-center gap-3 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md group"
                                     >
-                                        <Users className="h-4 w-4" />
-                                        Voir les participants ({event.currentAttendees})
+                                        <div className="bg-white p-2 rounded-lg shadow-sm group-hover:shadow transition-shadow">
+                                            <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+                                        </div>
+                                        <span className="text-base sm:text-lg">Voir les participants ({event.currentAttendees})</span>
                                     </Link>
                                 </div>
                             ) : isFull ? (
