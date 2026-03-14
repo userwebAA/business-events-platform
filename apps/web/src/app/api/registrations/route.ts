@@ -83,10 +83,11 @@ export async function POST(request: NextRequest) {
             // Ignorer si le badge existe déjà (contrainte unique)
         }
 
-        // Générer le billet avec QR code
-        console.log('🔵 Génération du billet...');
-        const ticket = await generateTicket(registration.id);
-        console.log('✅ Billet généré:', ticket.id);
+        // Générer les billets avec QR code (un par quantité)
+        console.log('🔵 Génération des billets...');
+        const tickets = await generateTicket(registration.id);
+        const firstTicket = Array.isArray(tickets) ? tickets[0] : tickets;
+        console.log('✅ Billets générés:', Array.isArray(tickets) ? tickets.length : 1);
 
         // Récupérer les données utilisateur
         const formData = body.formData as any;
@@ -95,13 +96,13 @@ export async function POST(request: NextRequest) {
         console.log('📧 Email utilisateur:', userEmail);
         console.log('👤 Nom utilisateur:', userName);
 
-        // Générer le PDF du billet avec QR code
+        // Générer le PDF du premier billet avec QR code
         let ticketPdfBuffer: Buffer | undefined;
         try {
             console.log('🔵 Génération du PDF avec QR code...');
             ticketPdfBuffer = await generateTicketPDF({
-                ticketId: ticket.id,
-                qrCode: ticket.qrCode,
+                ticketId: firstTicket.id,
+                qrCode: firstTicket.qrCode,
                 eventTitle: registration.event.title,
                 eventDate: registration.event.date,
                 eventLocation: registration.event.location,

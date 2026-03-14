@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, ArrowRight, Ticket, AlertTriangle, XCircle, Loader2, User as UserIcon, FileText, Heart, QrCode, ScanLine, Download } from 'lucide-react';
+import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, ArrowRight, Ticket, AlertTriangle, XCircle, Loader2, User as UserIcon, FileText, Heart, QrCode, ScanLine, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import { Event } from 'shared';
@@ -32,6 +32,8 @@ export default function EventDetailPage() {
     const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
     const [qrLoading, setQrLoading] = useState(false);
     const [qrTicketStatus, setQrTicketStatus] = useState<string>('');
+    const [allTickets, setAllTickets] = useState<any[]>([]);
+    const [currentTicketIndex, setCurrentTicketIndex] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -154,6 +156,12 @@ export default function EventDetailPage() {
                 const data = await res.json();
                 setQrCodeImage(data.qrCodeImage);
                 setQrTicketStatus(data.status);
+                if (data.tickets && data.tickets.length > 0) {
+                    setAllTickets(data.tickets);
+                } else {
+                    setAllTickets([{ qrCodeImage: data.qrCodeImage, status: data.status, ticketId: data.ticketId, index: 1 }]);
+                }
+                setCurrentTicketIndex(0);
             }
         } catch (error) {
             console.error('Erreur chargement QR code:', error);
@@ -621,6 +629,24 @@ export default function EventDetailPage() {
                                 )}
                             </button>
 
+                            {/* Bouton Ajouter à Google Agenda */}
+                            {event && !isCancelled && event.date && new Date(event.date) > new Date() && (
+                                <a
+                                    href={(() => {
+                                        const start = new Date(event.date);
+                                        const end = event.endDate ? new Date(event.endDate) : new Date(start.getTime() + 2 * 60 * 60 * 1000);
+                                        const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+                                        return `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.title)}&dates=${fmt(start)}/${fmt(end)}&location=${encodeURIComponent(event.location || '')}&details=${encodeURIComponent(event.description?.substring(0, 500) || '')}`;
+                                    })()}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full mt-1 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all border-2 bg-white border-gray-200 text-gray-700 hover:bg-sky-50 hover:border-sky-200 hover:text-sky-700"
+                                >
+                                    <Calendar className="h-4 w-4" />
+                                    Ajouter à Google Agenda
+                                </a>
+                            )}
+
                             {/* Bouton "Bonne soirée" (événement passé, inscrit ou organisateur) */}
                             {(isRegistered || isOrganizer) && !isCancelled && event?.date && new Date(event.date) < new Date() && (
                                 <button
@@ -701,7 +727,9 @@ export default function EventDetailPage() {
                             <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                                 <QrCode className="h-7 w-7 text-violet-600" />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900">Mon billet</h3>
+                            <h3 className="text-xl font-bold text-gray-900">
+                                {allTickets.length > 1 ? `Mes billets (${allTickets.length})` : 'Mon billet'}
+                            </h3>
                             <p className="text-sm text-gray-500 mt-1">Présentez ce QR code à l'entrée</p>
                         </div>
 
@@ -710,28 +738,62 @@ export default function EventDetailPage() {
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-500 mb-4"></div>
                                 <p className="text-gray-500 text-sm">Chargement du QR code...</p>
                             </div>
-                        ) : qrCodeImage ? (
+                        ) : allTickets.length > 0 ? (
                             <div className="flex flex-col items-center">
+                                {allTickets.length > 1 && (
+                                    <div className="flex items-center gap-4 mb-3 w-full justify-center">
+                                        <button
+                                            onClick={() => setCurrentTicketIndex(prev => Math.max(0, prev - 1))}
+                                            disabled={currentTicketIndex === 0}
+                                            className="p-2 rounded-full bg-violet-50 text-violet-600 hover:bg-violet-100 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                        >
+                                            <ChevronLeft className="h-5 w-5" />
+                                        </button>
+                                        <span className="text-sm font-bold text-gray-700">
+                                            Billet {currentTicketIndex + 1} / {allTickets.length}
+                                        </span>
+                                        <button
+                                            onClick={() => setCurrentTicketIndex(prev => Math.min(allTickets.length - 1, prev + 1))}
+                                            disabled={currentTicketIndex === allTickets.length - 1}
+                                            className="p-2 rounded-full bg-violet-50 text-violet-600 hover:bg-violet-100 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                        >
+                                            <ChevronRight className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                )}
+
                                 <div className="bg-white p-4 rounded-xl border-2 border-gray-100 shadow-inner mb-4">
-                                    <img src={qrCodeImage} alt="QR Code billet" className="w-56 h-56" />
+                                    <img src={allTickets[currentTicketIndex]?.qrCodeImage} alt={`QR Code billet ${currentTicketIndex + 1}`} className="w-56 h-56" />
                                 </div>
 
-                                {qrTicketStatus === 'VALID' && (
+                                {allTickets[currentTicketIndex]?.status === 'VALID' && (
                                     <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg text-sm font-bold mb-4">
                                         <Check className="h-4 w-4" />
                                         Billet valide
                                     </div>
                                 )}
-                                {qrTicketStatus === 'USED' && (
+                                {allTickets[currentTicketIndex]?.status === 'USED' && (
                                     <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm font-bold mb-4">
                                         <Check className="h-4 w-4" />
                                         Billet déjà utilisé
                                     </div>
                                 )}
-                                {qrTicketStatus === 'CANCELLED' && (
+                                {allTickets[currentTicketIndex]?.status === 'CANCELLED' && (
                                     <div className="flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-lg text-sm font-bold mb-4">
                                         <XCircle className="h-4 w-4" />
                                         Billet annulé
+                                    </div>
+                                )}
+
+                                {allTickets.length > 1 && (
+                                    <div className="flex justify-center gap-1.5 mb-4">
+                                        {allTickets.map((_: any, idx: number) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setCurrentTicketIndex(idx)}
+                                                className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentTicketIndex ? 'bg-violet-500 scale-110' : 'bg-gray-300 hover:bg-gray-400'}`}
+                                            />
+                                        ))}
                                     </div>
                                 )}
 

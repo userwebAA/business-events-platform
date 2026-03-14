@@ -150,8 +150,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         // Badge déjà existant
     }
 
-    // Générer le billet
-    const ticket = await generateTicket(registration.id);
+    // Générer les billets
+    const tickets = await generateTicket(registration.id);
+    const firstTicket = Array.isArray(tickets) ? tickets[0] : tickets;
 
     // Envoyer l'email de confirmation
     const userEmail = formData.email || formData.mail;
@@ -161,8 +162,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         let ticketPdfBuffer: Buffer | undefined;
         try {
             ticketPdfBuffer = await generateTicketPDF({
-                ticketId: ticket.id,
-                qrCode: ticket.qrCode,
+                ticketId: firstTicket.id,
+                qrCode: firstTicket.qrCode,
                 eventTitle: eventData.title,
                 eventDate: eventData.date,
                 eventLocation: eventData.location,

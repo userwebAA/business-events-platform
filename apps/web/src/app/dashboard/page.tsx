@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, MapPin, Users, Plus, CheckCircle, Settings, TrendingUp, Euro, Clock, Lock, ChevronRight, ArrowUpRight, Eye, X, User, Shield, Sparkles, Trash2, Flame, Database } from 'lucide-react';
+import { Calendar, MapPin, Users, Plus, CheckCircle, Settings, TrendingUp, Euro, Clock, Lock, ChevronRight, ArrowUpRight, Eye, X, User, Shield, Sparkles, Trash2, Flame, Database, Mail } from 'lucide-react';
 import { Event } from 'shared';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -207,7 +207,7 @@ export default function DashboardPage() {
 
 
                 {/* Actions rapides */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-10">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-10">
                     <Link
                         href="/dashboard/my-events"
                         className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-sky-200 transition-shadow duration-200 hover:-translate-y-1"
@@ -247,6 +247,17 @@ export default function DashboardPage() {
                         <p className="text-xs text-gray-500 hidden sm:block">
                             {isAdmin ? 'Mouvements financiers' : 'Revenus & remboursements'}
                         </p>
+                    </Link>
+
+                    <Link
+                        href="/dashboard/contacts"
+                        className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-violet-200 transition-shadow duration-200 hover:-translate-y-1"
+                    >
+                        <div className="bg-gradient-to-br from-violet-400 to-purple-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                            <Mail className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                        </div>
+                        <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">Mes Contacts</h3>
+                        <p className="text-xs text-gray-500 hidden sm:block">Listes & invitations</p>
                     </Link>
 
                     <Link

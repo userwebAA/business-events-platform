@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, ArrowLeft, Plus, Trash2, Clock, Lock, Copy, Check, MapPin, Image, Users, Euro, Type, FileText, Sparkles, ChevronRight, Upload, Shield, Loader2, RefreshCw, AlertTriangle, X } from 'lucide-react';
+import { Calendar, ArrowLeft, Plus, Trash2, Clock, Lock, Copy, Check, MapPin, Image, Users, Euro, Type, FileText, Sparkles, ChevronRight, Upload, Shield, Loader2, RefreshCw, AlertTriangle, X, Mail, Send } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { eventSchema, EventInput } from 'shared';
@@ -32,6 +32,9 @@ export default function CreateEventPage() {
     const [showDuplicateSelector, setShowDuplicateSelector] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
     const [cityQuery, setCityQuery] = useState('');
+    const [contactLists, setContactLists] = useState<any[]>([]);
+    const [selectedContactLists, setSelectedContactLists] = useState<string[]>([]);
+    const [invitationStatus, setInvitationStatus] = useState<string | null>(null);
 
     // Vérifier le statut d'identité
     useEffect(() => {
@@ -74,7 +77,7 @@ export default function CreateEventPage() {
     });
 
 
-    // Charger les événements existants pour la duplication
+    // Charger les événements existants pour la duplication + listes de contacts
     useEffect(() => {
         const fetchMyEvents = async () => {
             try {
@@ -89,7 +92,21 @@ export default function CreateEventPage() {
                 }
             } catch (e) { /* silently fail */ }
         };
+        const fetchContactLists = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+                const res = await fetch('/api/contacts', {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setContactLists(data);
+                }
+            } catch (e) { /* silently fail */ }
+        };
         fetchMyEvents();
+        fetchContactLists();
     }, []);
 
     const handleDuplicate = (event: any) => {
@@ -150,6 +167,30 @@ export default function CreateEventPage() {
             if (response.ok) {
                 const event = await response.json();
                 console.log('✅ Événement créé:', event);
+
+                // Envoyer les invitations si des listes sont sélectionnées
+                if (selectedContactLists.length > 0) {
+                    try {
+                        const selectedEmails = contactLists
+                            .filter(l => selectedContactLists.includes(l.id))
+                            .flatMap((l: any) => l.emails);
+                        const uniqueEmails = [...new Set(selectedEmails)];
+                        if (uniqueEmails.length > 0) {
+                            setInvitationStatus(`Envoi des invitations à ${uniqueEmails.length} contact(s)...`);
+                            await fetch(`/api/events/${event.id}/invite`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`,
+                                },
+                                body: JSON.stringify({ emails: uniqueEmails }),
+                            });
+                            setInvitationStatus(null);
+                        }
+                    } catch (e) {
+                        console.error('Erreur envoi invitations:', e);
+                    }
+                }
 
                 if (event.isPrivate && event.accessToken) {
                     setCreatedEvent(event);
@@ -800,6 +841,100 @@ export default function CreateEventPage() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Section 4 - Inviter des contacts */}
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-7 space-y-5 sm:space-y-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-violet-50 p-2 rounded-lg">
+                                    <Send className="h-5 w-5 text-violet-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg sm:text-xl font-bold text-gray-900">Inviter des contacts</h2>
+                                    <p className="text-sm text-gray-500">Envoyez un email d'invitation lors de la création</p>
+                                </div>
+                            </div>
+                            <Link
+                                href="/dashboard/contacts"
+                                className="flex items-center gap-2 bg-violet-50 text-violet-600 hover:bg-violet-100 px-4 py-2 rounded-lg font-bold text-sm transition-all"
+                            >
+                                <Mail className="h-4 w-4" />
+                                Gérer mes listes
+                            </Link>
+                        </div>
+
+                        {contactLists.length === 0 ? (
+                            <div className="text-center py-6 bg-gray-50 rounded-xl border border-gray-100">
+                                <Mail className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                                <p className="text-sm text-gray-500 mb-3">Aucune liste de contacts</p>
+                                <Link
+                                    href="/dashboard/contacts"
+                                    className="inline-flex items-center gap-2 text-sm font-bold text-violet-600 hover:text-violet-700"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Créer une liste de contacts
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {contactLists.map((list) => {
+                                    const isSelected = selectedContactLists.includes(list.id);
+                                    return (
+                                        <button
+                                            key={list.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedContactLists(prev =>
+                                                    isSelected
+                                                        ? prev.filter(id => id !== list.id)
+                                                        : [...prev, list.id]
+                                                );
+                                            }}
+                                            className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${isSelected
+                                                    ? 'border-violet-400 bg-violet-50'
+                                                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-violet-500 border-violet-500' : 'border-gray-300'
+                                                }`}>
+                                                {isSelected && <Check className="h-4 w-4 text-white" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-gray-900">{list.name}</p>
+                                                <p className="text-sm text-gray-500 truncate">
+                                                    {list.emails.length} email{list.emails.length !== 1 ? 's' : ''} — {list.emails.slice(0, 3).join(', ')}{list.emails.length > 3 ? '...' : ''}
+                                                </p>
+                                            </div>
+                                            <Mail className={`h-5 w-5 shrink-0 ${isSelected ? 'text-violet-500' : 'text-gray-300'}`} />
+                                        </button>
+                                    );
+                                })}
+
+                                {selectedContactLists.length > 0 && (
+                                    <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl">
+                                        <p className="text-sm font-bold text-violet-700">
+                                            {(() => {
+                                                const count = [...new Set(
+                                                    contactLists
+                                                        .filter(l => selectedContactLists.includes(l.id))
+                                                        .flatMap((l: any) => l.emails)
+                                                )].length;
+                                                return `${count} invitation${count !== 1 ? 's' : ''} seront envoyée${count !== 1 ? 's' : ''} à la création`;
+                                            })()}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Status invitations */}
+                    {invitationStatus && (
+                        <div className="flex items-center gap-3 p-4 bg-violet-50 border border-violet-200 rounded-2xl">
+                            <Loader2 className="h-5 w-5 animate-spin text-violet-500" />
+                            <p className="text-sm font-bold text-violet-700">{invitationStatus}</p>
+                        </div>
+                    )}
 
                     {/* Boutons d'action */}
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pb-8">

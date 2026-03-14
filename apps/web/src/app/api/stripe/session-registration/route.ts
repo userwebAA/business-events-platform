@@ -122,7 +122,8 @@ export async function GET(request: NextRequest) {
 
         // Générer le billet
         try {
-            const ticket = await generateTicket(registration.id);
+            const tickets = await generateTicket(registration.id);
+            const firstTicket = Array.isArray(tickets) ? tickets[0] : tickets;
 
             // Envoyer l'email de confirmation au participant
             const userEmail = formData.email || formData.mail;
@@ -132,8 +133,8 @@ export async function GET(request: NextRequest) {
                 let ticketPdfBuffer: Buffer | undefined;
                 try {
                     ticketPdfBuffer = await generateTicketPDF({
-                        ticketId: ticket.id,
-                        qrCode: ticket.qrCode,
+                        ticketId: firstTicket.id,
+                        qrCode: firstTicket.qrCode,
                         eventTitle: eventData.title,
                         eventDate: eventData.date,
                         eventLocation: eventData.location,

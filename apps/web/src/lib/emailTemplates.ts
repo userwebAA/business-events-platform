@@ -606,3 +606,113 @@ export async function sendEventCancelledEmail({
     return { success: false, error };
   }
 }
+
+interface EventInvitationParams {
+  to: string;
+  eventTitle: string;
+  eventDate: Date;
+  eventLocation: string;
+  eventDescription: string;
+  organizerName: string;
+  eventUrl: string;
+  isPaid: boolean;
+  price?: number;
+}
+
+export async function sendEventInvitationEmail(params: EventInvitationParams) {
+  const { to, eventTitle, eventDate, eventLocation, eventDescription, organizerName, eventUrl, isPaid, price } = params;
+
+  const formattedDate = new Date(eventDate).toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const priceText = isPaid && price ? `${price}€` : 'Gratuit';
+
+  const mailOptions = {
+    from: `"TAFF Events" <${process.env.SMTP_USER}>`,
+    to,
+    subject: `🎉 Vous êtes invité(e) : ${eventTitle}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); padding: 40px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Invitation</h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Vous êtes invité(e) à un événement</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 40px;">
+              <p style="font-size: 16px; color: #64748b; margin: 0 0 10px 0;">
+                <strong style="color: #334155;">${organizerName}</strong> vous invite à :
+              </p>
+              <h2 style="font-size: 24px; color: #1e293b; margin: 0 0 20px 0;">${eventTitle}</h2>
+              
+              <div style="background: #f8fafc; padding: 25px; border-radius: 12px; margin: 20px 0;">
+                <div style="margin: 0 0 15px 0;">
+                  <span style="font-weight: bold; color: #8b5cf6;">📅 Date</span><br>
+                  <span style="color: #334155;">${formattedDate}</span>
+                </div>
+                <div style="margin: 0 0 15px 0;">
+                  <span style="font-weight: bold; color: #8b5cf6;">📍 Lieu</span><br>
+                  <span style="color: #334155;">${eventLocation}</span>
+                </div>
+                <div style="margin: 0;">
+                  <span style="font-weight: bold; color: #8b5cf6;">💰 Tarif</span><br>
+                  <span style="color: #334155;">${priceText}</span>
+                </div>
+              </div>
+
+              ${eventDescription ? `
+              <div style="background: #faf5ff; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #8b5cf6;">
+                <p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.6;">${eventDescription.substring(0, 300)}${eventDescription.length > 300 ? '...' : ''}</p>
+              </div>
+              ` : ''}
+
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${eventUrl}" style="display: inline-block; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 16px 40px; text-decoration: none; border-radius: 12px; font-weight: bold; font-size: 16px;">
+                  Voir l'événement et s'inscrire
+                </a>
+              </div>
+
+              <p style="font-size: 13px; color: #94a3b8; text-align: center; margin: 20px 0 0 0;">
+                Cet email vous a été envoyé par ${organizerName} via TAFF Events
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0; color: #94a3b8; font-size: 12px;">
+                TAFF Events - Votre plateforme d'événements professionnels
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log('✅ Email d\'invitation envoyé à:', to);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Erreur envoi invitation:', error);
+    return { success: false, error };
+  }
+}

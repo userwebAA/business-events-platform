@@ -19,7 +19,7 @@ export async function GET(
       where: { id: registrationId },
       include: {
         event: true,
-        ticket: true
+        tickets: true
       }
     });
 
@@ -53,9 +53,10 @@ export async function GET(
 
     // Générer le QR code si un ticket existe
     let qrCodeDataURL: string | undefined;
-    if (registration.ticket?.qrCode) {
+    const firstTicket = registration.tickets?.[0];
+    if (firstTicket?.qrCode) {
       try {
-        qrCodeDataURL = await generateQRCodeImage(registration.ticket.qrCode);
+        qrCodeDataURL = await generateQRCodeImage(firstTicket.qrCode);
       } catch (error) {
         console.error('Erreur génération QR code pour facture:', error);
       }

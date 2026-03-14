@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTicketByRegistration, generateTicket, generateQRCodeImage } from '@/lib/ticketService';
+import { getTicketsByRegistration, generateTicket, generateQRCodeImage } from '@/lib/ticketService';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,33 +8,50 @@ export async function GET(
     { params }: { params: { registrationId: string } }
 ) {
     try {
-        // D'abord essayer de récupérer le ticket existant (avec relations)
-        let ticket = await getTicketByRegistration(params.registrationId);
+        // D'abord essayer de récupérer les tickets existants
+        let tickets = await getTicketsByRegistration(params.registrationId);
 
-        // Si pas de ticket, le générer puis le re-récupérer avec relations
-        if (!ticket) {
+        // Si pas de tickets, les générer puis les re-récupérer avec relations
+        if (!tickets || tickets.length === 0) {
             await generateTicket(params.registrationId);
-            ticket = await getTicketByRegistration(params.registrationId);
+            tickets = await getTicketsByRegistration(params.registrationId);
         }
 
-        if (!ticket) {
-            return NextResponse.json({ error: 'Impossible de générer le billet' }, { status: 500 });
+        if (!tickets || tickets.length === 0) {
+            return NextResponse.json({ error: 'Impossible de générer les billets' }, { status: 500 });
         }
 
-        const qrCodeImage = await generateQRCodeImage(ticket.qrCode);
-
-        const formData = ticket.registration.formData as any;
+        const firstTicket = tickets[0];
+        const formData = firstTicket.registration.formData as any;
         const attendeeName = formData?.name || formData?.firstName || 'Participant';
 
+        // Générer les QR codes pour tous les billets
+        const ticketsData = await Promise.all(
+            tickets.map(async (ticket, index) => {
+                const qrCodeImage = await generateQRCodeImage(ticket.qrCode);
+                return {
+                    ticketId: ticket.id,
+                    qrCode: ticket.qrCode,
+                    qrCodeImage,
+                    status: ticket.status,
+                    index: index + 1,
+                };
+            })
+        );
+
         return NextResponse.json({
-            ticketId: ticket.id,
-            qrCode: ticket.qrCode,
-            qrCodeImage,
-            status: ticket.status,
+            // Rétrocompatibilité : garder les champs du premier billet
+            ticketId: firstTicket.id,
+            qrCode: firstTicket.qrCode,
+            qrCodeImage: ticketsData[0].qrCodeImage,
+            status: firstTicket.status,
             attendeeName,
-            eventTitle: ticket.registration.event.title,
-            eventDate: ticket.registration.event.date,
-            eventLocation: ticket.registration.event.location,
+            eventTitle: firstTicket.registration.event.title,
+            eventDate: firstTicket.registration.event.date,
+            eventLocation: firstTicket.registration.event.location,
+            // Nouveau : tous les billets
+            tickets: ticketsData,
+            totalTickets: ticketsData.length,
         });
     } catch (error) {
         console.error('Erreur récupération QR code:', error);

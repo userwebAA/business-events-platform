@@ -60,7 +60,7 @@ model Registration {
   createdAt DateTime @default(now())
   
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  ticket    Ticket?
+  tickets   Ticket[]
   
   @@index([eventId])
   @@index([userId])
@@ -74,7 +74,7 @@ enum TicketStatus {
 
 model Ticket {
   id             String       @id @default(cuid())
-  registrationId String       @unique
+  registrationId String
   qrCode         String       @unique
   status         TicketStatus @default(VALID)
   usedAt         DateTime?
@@ -83,6 +83,7 @@ model Ticket {
   
   registration   Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
   
+  @@index([registrationId])
   @@index([qrCode])
   @@index([status])
 }
@@ -138,6 +139,7 @@ model User {
   payouts           Payout[]
   followers         Follow[]       @relation("following")
   following         Follow[]       @relation("followers")
+  contactLists      ContactList[]
   
   @@index([email])
 }
@@ -290,4 +292,17 @@ model Payout {
   
   @@index([organizerId])
   @@index([status])
+}
+
+model ContactList {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   // Nom de la liste (ex: "Clients VIP", "Collègues")
+  emails    String[] // Liste des emails
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle, Mail, Calendar, MapPin, ArrowLeft, QrCode, Download } from 'lucide-react';
+import { CheckCircle, Mail, Calendar, MapPin, ArrowLeft, QrCode, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { Event } from 'shared';
 
@@ -17,6 +17,8 @@ export default function RegistrationSuccessPage() {
     const [registrationId, setRegistrationId] = useState<string>('');
     const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
     const [qrLoading, setQrLoading] = useState(false);
+    const [allTickets, setAllTickets] = useState<any[]>([]);
+    const [currentTicketIndex, setCurrentTicketIndex] = useState(0);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -64,7 +66,7 @@ export default function RegistrationSuccessPage() {
                         }
                     }
 
-                    // Récupérer le QR code du billet
+                    // Récupérer les QR codes des billets
                     if (registrationId) {
                         setQrLoading(true);
                         try {
@@ -72,6 +74,12 @@ export default function RegistrationSuccessPage() {
                             if (qrRes.ok) {
                                 const qrData = await qrRes.json();
                                 setQrCodeImage(qrData.qrCodeImage);
+                                if (qrData.tickets && qrData.tickets.length > 0) {
+                                    setAllTickets(qrData.tickets);
+                                } else {
+                                    setAllTickets([{ qrCodeImage: qrData.qrCodeImage, status: qrData.status, ticketId: qrData.ticketId, index: 1 }]);
+                                }
+                                setCurrentTicketIndex(0);
                             }
                         } catch (error) {
                             console.error('Error fetching QR code:', error);
@@ -150,19 +158,56 @@ export default function RegistrationSuccessPage() {
                                     <div className="w-14 h-14 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                                         <QrCode className="h-7 w-7 text-violet-600" />
                                     </div>
-                                    <h3 className="font-bold text-gray-900 text-lg mb-1">🎫 Votre billet</h3>
+                                    <h3 className="font-bold text-gray-900 text-lg mb-1">
+                                        {allTickets.length > 1 ? `🎫 Vos billets (${allTickets.length})` : '🎫 Votre billet'}
+                                    </h3>
                                     <p className="text-sm text-gray-500 mb-4">Présentez ce QR code à l'entrée de l'événement</p>
 
                                     {qrLoading ? (
                                         <div className="flex flex-col items-center py-4">
                                             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-violet-500 mb-3"></div>
-                                            <p className="text-gray-500 text-sm">Génération du QR code...</p>
+                                            <p className="text-gray-500 text-sm">Génération des QR codes...</p>
                                         </div>
-                                    ) : qrCodeImage ? (
+                                    ) : allTickets.length > 0 ? (
                                         <div className="flex flex-col items-center">
+                                            {allTickets.length > 1 && (
+                                                <div className="flex items-center gap-4 mb-3">
+                                                    <button
+                                                        onClick={() => setCurrentTicketIndex(prev => Math.max(0, prev - 1))}
+                                                        disabled={currentTicketIndex === 0}
+                                                        className="p-2 rounded-full bg-violet-50 text-violet-600 hover:bg-violet-100 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    >
+                                                        <ChevronLeft className="h-5 w-5" />
+                                                    </button>
+                                                    <span className="text-sm font-bold text-gray-700">
+                                                        Billet {currentTicketIndex + 1} / {allTickets.length}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => setCurrentTicketIndex(prev => Math.min(allTickets.length - 1, prev + 1))}
+                                                        disabled={currentTicketIndex === allTickets.length - 1}
+                                                        className="p-2 rounded-full bg-violet-50 text-violet-600 hover:bg-violet-100 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    >
+                                                        <ChevronRight className="h-5 w-5" />
+                                                    </button>
+                                                </div>
+                                            )}
+
                                             <div className="bg-white p-4 rounded-xl border-2 border-gray-100 shadow-inner mb-4 inline-block">
-                                                <img src={qrCodeImage} alt="QR Code billet" className="w-48 h-48" />
+                                                <img src={allTickets[currentTicketIndex]?.qrCodeImage} alt={`QR Code billet ${currentTicketIndex + 1}`} className="w-48 h-48" />
                                             </div>
+
+                                            {allTickets.length > 1 && (
+                                                <div className="flex justify-center gap-1.5 mb-4">
+                                                    {allTickets.map((_: any, idx: number) => (
+                                                        <button
+                                                            key={idx}
+                                                            onClick={() => setCurrentTicketIndex(idx)}
+                                                            className={`w-2.5 h-2.5 rounded-full transition-all ${idx === currentTicketIndex ? 'bg-violet-500 scale-110' : 'bg-gray-300 hover:bg-gray-400'}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            )}
+
                                             <div className="flex gap-2">
                                                 <a
                                                     href={`/api/tickets/${registrationId}`}

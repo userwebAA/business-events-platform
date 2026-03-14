@@ -8,6 +8,7 @@ export async function generateTicket(registrationId: string) {
             where: { id: registrationId },
             include: {
                 event: true,
+                tickets: true,
             },
         });
 
@@ -15,25 +16,29 @@ export async function generateTicket(registrationId: string) {
             throw new Error('Inscription non trouvée');
         }
 
-        const existingTicket = await prisma.ticket.findUnique({
-            where: { registrationId },
-        });
+        const quantity = registration.quantity || 1;
 
-        if (existingTicket) {
-            return existingTicket;
+        // Si des tickets existent déjà en nombre suffisant, les retourner
+        if (registration.tickets.length >= quantity) {
+            return registration.tickets;
         }
 
-        const qrCodeData = crypto.randomBytes(32).toString('hex');
+        // Créer les tickets manquants
+        const ticketsToCreate = quantity - registration.tickets.length;
+        const newTickets = [];
+        for (let i = 0; i < ticketsToCreate; i++) {
+            const qrCodeData = crypto.randomBytes(32).toString('hex');
+            const ticket = await prisma.ticket.create({
+                data: {
+                    registrationId,
+                    qrCode: qrCodeData,
+                    status: 'VALID',
+                },
+            });
+            newTickets.push(ticket);
+        }
 
-        const ticket = await prisma.ticket.create({
-            data: {
-                registrationId,
-                qrCode: qrCodeData,
-                status: 'VALID',
-            },
-        });
-
-        return ticket;
+        return [...registration.tickets, ...newTickets];
     } catch (error) {
         console.error('Erreur génération ticket:', error);
         throw error;
@@ -147,7 +152,7 @@ export async function cancelTicket(ticketId: string) {
 
 export async function getTicketByRegistration(registrationId: string) {
     try {
-        const ticket = await prisma.ticket.findUnique({
+        const ticket = await prisma.ticket.findFirst({
             where: { registrationId },
             include: {
                 registration: {
@@ -161,6 +166,29 @@ export async function getTicketByRegistration(registrationId: string) {
         return ticket;
     } catch (error) {
         console.error('Erreur récupération ticket:', error);
+        throw error;
+    }
+}
+
+export async function getTicketsByRegistration(registrationId: string) {
+    try {
+        const tickets = await prisma.ticket.findMany({
+            where: { registrationId },
+            include: {
+                registration: {
+                    include: {
+                        event: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'asc',
+            },
+        });
+
+        return tickets;
+    } catch (error) {
+        console.error('Erreur récupération tickets:', error);
         throw error;
     }
 }

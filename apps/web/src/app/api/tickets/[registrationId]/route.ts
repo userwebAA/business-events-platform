@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateTicket, getTicketByRegistration } from '@/lib/ticketService';
-import { generateTicketPDF } from '@/lib/pdfTicketGenerator';
+import { generateTicket, getTicketsByRegistration } from '@/lib/ticketService';
+import { generateTicketPDF, generateMultiTicketPDF } from '@/lib/pdfTicketGenerator';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -26,21 +26,20 @@ export async function GET(
 
         console.log('✅ Inscription trouvée:', registration.id);
 
-        let ticket = await getTicketByRegistration(params.registrationId);
+        let tickets = await getTicketsByRegistration(params.registrationId);
 
-        if (!ticket) {
-            console.log('🔵 Génération nouveau ticket...');
+        if (!tickets || tickets.length === 0) {
+            console.log('🔵 Génération nouveaux tickets...');
             await generateTicket(params.registrationId);
-            // Re-fetch pour avoir les relations
-            ticket = await getTicketByRegistration(params.registrationId);
+            tickets = await getTicketsByRegistration(params.registrationId);
         }
 
-        if (!ticket) {
-            console.error('❌ Impossible de générer le billet');
-            return NextResponse.json({ error: 'Impossible de générer le billet' }, { status: 500 });
+        if (!tickets || tickets.length === 0) {
+            console.error('❌ Impossible de générer les billets');
+            return NextResponse.json({ error: 'Impossible de générer les billets' }, { status: 500 });
         }
 
-        console.log('✅ Ticket trouvé:', ticket.id, 'QR:', ticket.qrCode.substring(0, 10) + '...');
+        console.log('✅ Tickets trouvés:', tickets.length);
 
         const formData = registration.formData as any;
         const attendeeName = formData?.name || formData?.firstName || 'Participant';
@@ -48,7 +47,7 @@ export async function GET(
 
         console.log('🔵 Génération PDF...');
 
-        const pdfBuffer = await generateTicketPDF({
+        const ticketsData = tickets.map((ticket, index) => ({
             ticketId: ticket.id,
             qrCode: ticket.qrCode,
             eventTitle: registration.event.title,
@@ -58,7 +57,13 @@ export async function GET(
             attendeeName,
             attendeeEmail,
             registrationId: registration.id,
-        });
+            ticketNumber: index + 1,
+            totalTickets: tickets.length,
+        }));
+
+        const pdfBuffer = tickets.length > 1
+            ? await generateMultiTicketPDF(ticketsData)
+            : await generateTicketPDF(ticketsData[0]);
 
         console.log('✅ PDF généré, taille:', pdfBuffer.length, 'bytes');
 

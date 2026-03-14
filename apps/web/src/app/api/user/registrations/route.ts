@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
             where: { userId: decoded.userId },
             include: {
                 event: true,
-                ticket: true,
+                tickets: true,
             },
             orderBy: { createdAt: 'desc' },
         });
