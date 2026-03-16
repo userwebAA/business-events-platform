@@ -34,6 +34,12 @@ export default function EventDetailPage() {
     const [qrTicketStatus, setQrTicketStatus] = useState<string>('');
     const [allTickets, setAllTickets] = useState<any[]>([]);
     const [currentTicketIndex, setCurrentTicketIndex] = useState(0);
+    const [showFollowUpModal, setShowFollowUpModal] = useState(false);
+    const [followUpTargetType, setFollowUpTargetType] = useState<'registered' | 'contactLists'>('registered');
+    const [followUpMessage, setFollowUpMessage] = useState('');
+    const [followUpLoading, setFollowUpLoading] = useState(false);
+    const [contactLists, setContactLists] = useState<any[]>([]);
+    const [selectedContactLists, setSelectedContactLists] = useState<string[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -584,6 +590,13 @@ export default function EventDetailPage() {
                                         <Euro className="h-4 w-4" />
                                         Tableau de bord paiements
                                     </Link>
+                                    <button
+                                        onClick={() => setShowFollowUpModal(true)}
+                                        className="w-full bg-gradient-to-r from-pink-500 to-rose-600 text-white py-3.5 rounded-xl font-bold hover:from-pink-600 hover:to-rose-700 transition-all flex items-center justify-center gap-2 shadow-md"
+                                    >
+                                        <Share2 className="h-4 w-4" />
+                                        Envoyer une relance
+                                    </button>
                                 </div>
                             ) : isRegistered ? (
                                 <div className="space-y-3">
@@ -885,6 +898,186 @@ export default function EventDetailPage() {
                                     <>Confirmer l'annulation</>
                                 )}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Relance */}
+            {showFollowUpModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-gradient-to-r from-pink-500 to-rose-600 text-white p-6 rounded-t-2xl">
+                            <h2 className="text-2xl font-bold flex items-center gap-2">
+                                <Share2 className="h-6 w-6" />
+                                Envoyer une relance
+                            </h2>
+                            <p className="text-pink-100 text-sm mt-1">Relancez vos participants ou contactez de nouvelles personnes</p>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Choix des destinataires */}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-3">
+                                    Destinataires
+                                </label>
+                                <div className="space-y-3">
+                                    <label className="flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                        <input
+                                            type="radio"
+                                            name="targetType"
+                                            value="registered"
+                                            checked={followUpTargetType === 'registered'}
+                                            onChange={(e) => setFollowUpTargetType(e.target.value as 'registered')}
+                                            className="mt-1"
+                                        />
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-gray-900">Participants inscrits</p>
+                                            <p className="text-sm text-gray-500">Envoyer aux {event?.currentAttendees || 0} personnes déjà inscrites</p>
+                                        </div>
+                                    </label>
+
+                                    <label className="flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                                        <input
+                                            type="radio"
+                                            name="targetType"
+                                            value="contactLists"
+                                            checked={followUpTargetType === 'contactLists'}
+                                            onChange={(e) => {
+                                                setFollowUpTargetType(e.target.value as 'contactLists');
+                                                // Charger les listes de contacts
+                                                if (contactLists.length === 0) {
+                                                    const token = localStorage.getItem('token');
+                                                    fetch('/api/contacts', {
+                                                        headers: { 'Authorization': `Bearer ${token}` }
+                                                    })
+                                                        .then(res => res.json())
+                                                        .then(data => setContactLists(data))
+                                                        .catch(err => console.error(err));
+                                                }
+                                            }}
+                                            className="mt-1"
+                                        />
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-gray-900">Listes de contacts</p>
+                                            <p className="text-sm text-gray-500">Envoyer à vos listes de contacts personnalisées</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {/* Sélection des listes de contacts */}
+                            {followUpTargetType === 'contactLists' && (
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-3">
+                                        Sélectionner les listes
+                                    </label>
+                                    {contactLists.length === 0 ? (
+                                        <p className="text-sm text-gray-500 italic">Aucune liste de contacts disponible</p>
+                                    ) : (
+                                        <div className="space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-3">
+                                            {contactLists.map((list: any) => (
+                                                <label key={list.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedContactLists.includes(list.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setSelectedContactLists([...selectedContactLists, list.id]);
+                                                            } else {
+                                                                setSelectedContactLists(selectedContactLists.filter(id => id !== list.id));
+                                                            }
+                                                        }}
+                                                    />
+                                                    <div className="flex-1">
+                                                        <p className="font-medium text-gray-900">{list.name}</p>
+                                                        <p className="text-xs text-gray-500">{list.emails.length} contacts</p>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Message personnalisé */}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    Message personnalisé (optionnel)
+                                </label>
+                                <textarea
+                                    value={followUpMessage}
+                                    onChange={(e) => setFollowUpMessage(e.target.value)}
+                                    placeholder="Ex: N'oubliez pas de venir ! Nous avons préparé une surprise..."
+                                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                                    rows={4}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Ce message sera ajouté à l'email de relance</p>
+                            </div>
+
+                            {/* Boutons d'action */}
+                            <div className="flex gap-3 pt-4 border-t">
+                                <button
+                                    onClick={() => {
+                                        setShowFollowUpModal(false);
+                                        setFollowUpMessage('');
+                                        setSelectedContactLists([]);
+                                    }}
+                                    disabled={followUpLoading}
+                                    className="flex-1 py-3 rounded-xl font-semibold text-gray-600 hover:bg-gray-100 transition-all disabled:opacity-50"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        if (followUpTargetType === 'contactLists' && selectedContactLists.length === 0) {
+                                            alert('Veuillez sélectionner au moins une liste de contacts');
+                                            return;
+                                        }
+
+                                        setFollowUpLoading(true);
+                                        try {
+                                            const token = localStorage.getItem('token');
+                                            const res = await fetch(`/api/events/${event?.id}/follow-up`, {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'Authorization': `Bearer ${token}`
+                                                },
+                                                body: JSON.stringify({
+                                                    targetType: followUpTargetType,
+                                                    contactListIds: followUpTargetType === 'contactLists' ? selectedContactLists : undefined,
+                                                    customMessage: followUpMessage || undefined,
+                                                }),
+                                            });
+
+                                            if (res.ok) {
+                                                const data = await res.json();
+                                                alert(`✅ Relance envoyée avec succès !\n\n${data.sent} emails envoyés${data.failed > 0 ? `\n${data.failed} échecs` : ''}`);
+                                                setShowFollowUpModal(false);
+                                                setFollowUpMessage('');
+                                                setSelectedContactLists([]);
+                                            } else {
+                                                const error = await res.json();
+                                                alert(`Erreur : ${error.error || 'Impossible d\'envoyer les relances'}`);
+                                            }
+                                        } catch (error) {
+                                            console.error('Erreur:', error);
+                                            alert('Une erreur est survenue lors de l\'envoi des relances');
+                                        } finally {
+                                            setFollowUpLoading(false);
+                                        }
+                                    }}
+                                    disabled={followUpLoading}
+                                    className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-pink-500 to-rose-600 text-white hover:from-pink-600 hover:to-rose-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {followUpLoading ? (
+                                        <><Loader2 className="h-4 w-4 animate-spin" /> Envoi en cours...</>
+                                    ) : (
+                                        <>Envoyer la relance</>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
