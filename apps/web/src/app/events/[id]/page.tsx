@@ -40,6 +40,8 @@ export default function EventDetailPage() {
     const [followUpLoading, setFollowUpLoading] = useState(false);
     const [contactLists, setContactLists] = useState<any[]>([]);
     const [selectedContactLists, setSelectedContactLists] = useState<string[]>([]);
+    const [showFollowUpSuccess, setShowFollowUpSuccess] = useState(false);
+    const [followUpResult, setFollowUpResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -1053,8 +1055,9 @@ export default function EventDetailPage() {
 
                                             if (res.ok) {
                                                 const data = await res.json();
-                                                alert(`✅ Relance envoyée avec succès !\n\n${data.sent} emails envoyés${data.failed > 0 ? `\n${data.failed} échecs` : ''}`);
+                                                setFollowUpResult(data);
                                                 setShowFollowUpModal(false);
+                                                setShowFollowUpSuccess(true);
                                                 setFollowUpMessage('');
                                                 setSelectedContactLists([]);
                                             } else {
@@ -1078,6 +1081,55 @@ export default function EventDetailPage() {
                                     )}
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Succès Relance */}
+            {showFollowUpSuccess && followUpResult && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                        <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-t-2xl text-center">
+                            <div className="bg-white/20 w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                <Check className="h-10 w-10" />
+                            </div>
+                            <h2 className="text-2xl font-bold">Relance envoyée !</h2>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="text-center">
+                                <p className="text-gray-600 mb-6">Vos emails de relance ont été envoyés avec succès</p>
+
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                                        <div className="text-3xl font-bold text-emerald-600">{followUpResult.sent}</div>
+                                        <div className="text-sm text-emerald-700 font-medium mt-1">Envoyés</div>
+                                    </div>
+                                    {followUpResult.failed > 0 && (
+                                        <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                            <div className="text-3xl font-bold text-red-600">{followUpResult.failed}</div>
+                                            <div className="text-sm text-red-700 font-medium mt-1">Échecs</div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
+                                    <p className="text-sm text-gray-600">
+                                        <span className="font-bold text-gray-900">{followUpResult.total}</span> destinataire{followUpResult.total > 1 ? 's' : ''} au total
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setShowFollowUpSuccess(false);
+                                    setFollowUpResult(null);
+                                }}
+                                className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 transition-all"
+                            >
+                                Fermer
+                            </button>
                         </div>
                     </div>
                 </div>
