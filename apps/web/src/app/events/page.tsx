@@ -557,23 +557,9 @@ export default function EventsPage() {
                                 )}
 
                                 {/* Bouton facture pour les inscriptions payantes (disponible 2 mois) */}
-                                {activeTab === 'registered' && event.type === 'paid' && event.price && (() => {
-                                    const regId = sessionStorage.getItem(`registration_${event.id}`);
-                                    const regDate = sessionStorage.getItem(`registration_date_${event.id}`);
-                                    const twoMonthsAgo = new Date();
-                                    twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
-                                    const isExpired = regDate && new Date(regDate) < twoMonthsAgo;
+                                {activeTab === 'registered' && event.type === 'paid' && event.price && (event as any).registrationId && (() => {
+                                    const regId = (event as any).registrationId;
                                     if (!regId) return null;
-                                    if (isExpired) {
-                                        return (
-                                            <div className="px-5 pb-5">
-                                                <div className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-400 px-4 py-3 rounded-xl text-sm font-medium cursor-not-allowed">
-                                                    <FileText className="h-4 w-4" />
-                                                    Facture expirée (2 mois)
-                                                </div>
-                                            </div>
-                                        );
-                                    }
                                     return (
                                         <div className="px-5 pb-5">
                                             <button
