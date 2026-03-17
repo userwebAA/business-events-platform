@@ -207,7 +207,7 @@ export default function DashboardPage() {
 
 
                 {/* Actions rapides */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-10">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-10">
                     <Link
                         href="/dashboard/my-events"
                         className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-sky-200 transition-shadow duration-200 hover:-translate-y-1"
