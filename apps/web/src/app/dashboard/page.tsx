@@ -234,20 +234,41 @@ export default function DashboardPage() {
                         </p>
                     </Link>
 
-                    <Link
-                        href={isAdmin ? '/dashboard/admin/treasury' : '/dashboard/my-payments'}
-                        className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-amber-200 transition-shadow duration-200 hover:-translate-y-1"
-                    >
-                        <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg group-hover:scale-110 transition-transform duration-200">
-                            <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                        </div>
-                        <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">
-                            {isAdmin ? 'Trésorerie' : 'Mes Paiements'}
-                        </h3>
-                        <p className="text-xs text-gray-500 hidden sm:block">
-                            {isAdmin ? 'Mouvements financiers' : 'Revenus & remboursements'}
-                        </p>
-                    </Link>
+                    {isAdmin ? (
+                        <>
+                            <Link
+                                href="/dashboard/admin/treasury"
+                                className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-amber-200 transition-shadow duration-200 hover:-translate-y-1"
+                            >
+                                <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                    <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                </div>
+                                <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">Trésorerie</h3>
+                                <p className="text-xs text-gray-500 hidden sm:block">Mouvements financiers</p>
+                            </Link>
+                            <Link
+                                href="/dashboard/my-payments"
+                                className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-emerald-200 transition-shadow duration-200 hover:-translate-y-1"
+                            >
+                                <div className="bg-gradient-to-br from-emerald-400 to-green-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                    <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                </div>
+                                <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">Mes Paiements</h3>
+                                <p className="text-xs text-gray-500 hidden sm:block">Revenus & remboursements</p>
+                            </Link>
+                        </>
+                    ) : (
+                        <Link
+                            href="/dashboard/my-payments"
+                            className="group bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-lg hover:border-amber-200 transition-shadow duration-200 hover:-translate-y-1"
+                        >
+                            <div className="bg-gradient-to-br from-amber-400 to-orange-500 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4 shadow-lg group-hover:scale-110 transition-transform duration-200">
+                                <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                            </div>
+                            <h3 className="font-bold text-gray-900 mb-1 text-sm sm:text-base">Mes Paiements</h3>
+                            <p className="text-xs text-gray-500 hidden sm:block">Revenus & remboursements</p>
+                        </Link>
+                    )}
 
                     <Link
                         href="/dashboard/contacts"
