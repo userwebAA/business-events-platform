@@ -118,6 +118,10 @@ export default function AdminTreasuryPage() {
     const [expandedOrganizer, setExpandedOrganizer] = useState<string | null>(null);
     const [refundingId, setRefundingId] = useState<string | null>(null);
     const [refundMessage, setRefundMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [showRefundConfirm, setShowRefundConfirm] = useState(false);
+    const [refundData, setRefundData] = useState<{ paymentId: string; eventTitle: string; amount: number } | null>(null);
+    const [showRefundSuccess, setShowRefundSuccess] = useState(false);
+    const [refundSuccessAmount, setRefundSuccessAmount] = useState<number>(0);
     const [stripeAccounts, setStripeAccounts] = useState<StripeAccount[]>([]);
     const [stripeActionLoading, setStripeActionLoading] = useState<string | null>(null);
     const [stripeMessage, setStripeMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -215,11 +219,19 @@ export default function AdminTreasuryPage() {
         }
     };
 
-    const handleRefund = async (paymentId: string, eventTitle: string, amount: number) => {
-        if (!confirm(`Rembourser ${amount.toFixed(2)}€ pour "${eventTitle}" ?\nCette action est irréversible.`)) return;
+    const handleRefund = (paymentId: string, eventTitle: string, amount: number) => {
+        setRefundData({ paymentId, eventTitle, amount });
+        setShowRefundConfirm(true);
+    };
 
+    const confirmRefund = async () => {
+        if (!refundData) return;
+
+        const { paymentId, amount } = refundData;
+        setShowRefundConfirm(false);
         setRefundingId(paymentId);
         setRefundMessage(null);
+
         try {
             const token = localStorage.getItem('token');
             const res = await fetch('/api/stripe/refund', {
@@ -229,7 +241,8 @@ export default function AdminTreasuryPage() {
             });
             const data = await res.json();
             if (res.ok) {
-                setRefundMessage({ type: 'success', text: `Remboursement de ${amount.toFixed(2)}€ effectué` });
+                setRefundSuccessAmount(amount);
+                setShowRefundSuccess(true);
                 fetchTreasury();
             } else {
                 setRefundMessage({ type: 'error', text: data.error || 'Erreur lors du remboursement' });
@@ -238,6 +251,7 @@ export default function AdminTreasuryPage() {
             setRefundMessage({ type: 'error', text: 'Erreur de connexion' });
         } finally {
             setRefundingId(null);
+            setRefundData(null);
         }
     };
 
@@ -738,6 +752,97 @@ export default function AdminTreasuryPage() {
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal Confirmation Remboursement */}
+                {showRefundConfirm && refundData && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                            <div className="bg-gradient-to-r from-red-500 to-rose-600 text-white p-6 rounded-t-2xl text-center">
+                                <div className="bg-white/20 w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                    <AlertCircle className="h-10 w-10" />
+                                </div>
+                                <h2 className="text-2xl font-bold">Confirmer le remboursement</h2>
+                            </div>
+
+                            <div className="p-6 space-y-4">
+                                <div className="text-center">
+                                    <p className="text-gray-600 mb-4">Vous êtes sur le point de rembourser :</p>
+
+                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                                        <p className="font-bold text-gray-900 text-lg mb-2">{refundData.eventTitle}</p>
+                                        <p className="text-3xl font-bold text-red-600">{refundData.amount.toFixed(2)}€</p>
+                                    </div>
+
+                                    <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                        <p className="text-sm text-red-700 font-medium flex items-center gap-2 justify-center">
+                                            <AlertCircle className="h-4 w-4" />
+                                            Cette action est irréversible
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        onClick={() => {
+                                            setShowRefundConfirm(false);
+                                            setRefundData(null);
+                                        }}
+                                        className="flex-1 py-3 rounded-xl font-semibold text-gray-600 hover:bg-gray-100 transition-all"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        onClick={confirmRefund}
+                                        className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 transition-all"
+                                    >
+                                        Confirmer le remboursement
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal Succès Remboursement */}
+                {showRefundSuccess && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                            <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-t-2xl text-center">
+                                <div className="bg-white/20 w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                    <CheckCircle className="h-10 w-10" />
+                                </div>
+                                <h2 className="text-2xl font-bold">Remboursement effectué !</h2>
+                            </div>
+
+                            <div className="p-6 space-y-4">
+                                <div className="text-center">
+                                    <p className="text-gray-600 mb-6">Le remboursement a été traité avec succès</p>
+
+                                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 mb-6">
+                                        <div className="text-4xl font-bold text-emerald-600 mb-2">{refundSuccessAmount.toFixed(2)}€</div>
+                                        <div className="text-sm text-emerald-700 font-medium">Remboursé</div>
+                                    </div>
+
+                                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                                        <p className="text-sm text-blue-700">
+                                            Le client recevra le remboursement sous 5-10 jours ouvrés
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        setShowRefundSuccess(false);
+                                        setRefundSuccessAmount(0);
+                                    }}
+                                    className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 transition-all"
+                                >
+                                    Fermer
+                                </button>
                             </div>
                         </div>
                     </div>

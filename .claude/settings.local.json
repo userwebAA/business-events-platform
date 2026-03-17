@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo $PATH)",
+      "Bash(rtk --version)",
+      "Bash(rtk gh:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(docker --version)",
+      "Bash(n8n --version)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5678)"
+    ]
+  }
+}
