@@ -1,116 +1,14 @@
 'use client';
 
 import Link from 'next/link'
-import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight, X, Share2, MapPin, Clock, Lock, XCircle } from 'lucide-react'
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { format } from 'date-fns'
-import { fr } from 'date-fns/locale'
-import { FRENCH_CITIES } from '@/lib/frenchCities'
-
-// Styles pour l'animation flamme
-const flameStyles = `
-@keyframes rise {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: translateY(-60px) scale(1.3);
-  }
-  100% {
-    transform: translateY(-120px) scale(0.5);
-    opacity: 0;
-  }
-}
-@keyframes flameGlow {
-  0%, 100% { box-shadow: 0 0 20px rgba(251, 146, 60, 0.4), 0 0 40px rgba(251, 146, 60, 0.2); }
-  50% { box-shadow: 0 0 30px rgba(251, 146, 60, 0.6), 0 0 60px rgba(251, 146, 60, 0.3); }
-}
-`;
+import { Calendar, Users, CreditCard, Shield, Download, Smartphone, Zap, Bell, ArrowRight, QrCode, BarChart3, Globe, ChevronRight, X, Share2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 export default function Home() {
-    // Injecter les styles d'animation
-    useEffect(() => {
-        const style = document.createElement('style');
-        style.textContent = flameStyles;
-        document.head.appendChild(style);
-        return () => { document.head.removeChild(style); };
-    }, []);
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
     const [showInstallButton, setShowInstallButton] = useState(false);
     const [showInstallGuide, setShowInstallGuide] = useState(false);
     const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop'>('desktop');
-    const [publicEvents, setPublicEvents] = useState<any[]>([]);
-    const [cityFilter, setCityFilter] = useState('');
-    const [eventsLoading, setEventsLoading] = useState(true);
-    const [visibleCards, setVisibleCards] = useState<Set<number>>(new Set());
-    const cardsRef = useRef<(HTMLElement | null)[]>([]);
-
-    useEffect(() => {
-        const fetchPublicEvents = async () => {
-            try {
-                const res = await fetch('/api/events');
-                if (res.ok) {
-                    const data = await res.json();
-                    const now = new Date();
-                    setPublicEvents(
-                        data
-                            .map((e: any) => ({ ...e, date: new Date(e.date) }))
-                            .filter((e: any) => new Date(e.date) > now && !e.isPrivate && e.status !== 'cancelled')
-                    );
-                }
-            } catch (e) {
-                console.error('Erreur fetch events:', e);
-            } finally {
-                setEventsLoading(false);
-            }
-        };
-        fetchPublicEvents();
-    }, []);
-
-    const filteredPublicEvents = (cityFilter
-        ? publicEvents.filter(e => e.location?.toLowerCase().includes(cityFilter.toLowerCase()))
-        : publicEvents
-    ).sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-
-    // Reset animations quand le filtre change
-    useEffect(() => {
-        setVisibleCards(new Set());
-        cardsRef.current = [];
-    }, [cityFilter]);
-
-    // IntersectionObserver pour animations au scroll
-    useEffect(() => {
-        if (eventsLoading) return;
-        const observer = new IntersectionObserver(
-            (entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        const idx = Number(entry.target.getAttribute('data-idx'));
-                        if (!isNaN(idx)) {
-                            setTimeout(() => {
-                                setVisibleCards(prev => new Set(prev).add(idx));
-                            }, idx * 120);
-                        }
-                        observer.unobserve(entry.target);
-                    }
-                });
-            },
-            { threshold: 0.1 }
-        );
-
-        // Petit délai pour laisser le DOM se rendre
-        const timer = setTimeout(() => {
-            cardsRef.current.forEach((el) => {
-                if (el) observer.observe(el);
-            });
-        }, 50);
-
-        return () => {
-            clearTimeout(timer);
-            observer.disconnect();
-        };
-    }, [filteredPublicEvents, eventsLoading]);
 
     useEffect(() => {
         const ua = navigator.userAgent || '';
@@ -149,7 +47,7 @@ export default function Home() {
     };
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen">
             {/* Hero Section - Full Screen */}
             <div className="relative min-h-screen bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-800 overflow-hidden">
                 {/* Animated Background Elements */}
@@ -313,59 +211,30 @@ export default function Home() {
 
             {/* PWA Install Section */}
             {showInstallButton && (
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-8 relative z-20 mb-16">
-                    <div className="relative rounded-3xl shadow-2xl overflow-hidden border border-sky-200/50">
-                        {/* Fond dégradé clair moderne */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-white via-sky-50 to-blue-50"></div>
+                <div className="max-w-5xl mx-auto px-6 -mt-8 relative z-20 mb-16">
+                    <div className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -mr-32 -mt-32"></div>
+                        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-10 rounded-full -ml-24 -mb-24"></div>
 
-                        {/* Effets lumineux */}
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-sky-400/20 via-blue-400/10 to-transparent rounded-full blur-3xl"></div>
-                        <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-purple-400/15 via-violet-400/10 to-transparent rounded-full blur-3xl"></div>
-
-                        {/* Grille de fond subtile */}
-                        <div className="absolute inset-0 bg-[linear-gradient(rgba(14,165,233,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(14,165,233,0.03)_1px,transparent_1px)] bg-[size:32px_32px]"></div>
-
-                        <div className="relative z-10 p-6 sm:p-8 md:p-10">
-                            <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
-                                {/* Icône avec effet glow */}
-                                <div className="relative group">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-sky-400 to-blue-600 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
-                                    <div className="relative bg-gradient-to-br from-sky-500 to-blue-600 p-5 rounded-2xl shadow-xl">
-                                        <Smartphone className="h-12 w-12 sm:h-14 sm:w-14 text-white" />
-                                    </div>
-                                </div>
-
-                                {/* Texte */}
-                                <div className="flex-1 text-center md:text-left">
-                                    <h2 className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                                        Installez l'application TAFF Events
-                                    </h2>
-                                    <p className="text-gray-600 text-sm sm:text-base">
-                                        Accès instantané, notifications en temps réel et mode hors ligne
-                                    </p>
-                                </div>
-
-                                {/* Bouton installer modernisé */}
-                                <button
-                                    onClick={handleInstallClick}
-                                    className="group relative px-8 py-4 rounded-xl text-base sm:text-lg font-bold transition-all duration-300 flex items-center gap-2.5 whitespace-nowrap overflow-hidden"
-                                >
-                                    {/* Fond dégradé animé */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 transition-transform duration-300 group-hover:scale-105"></div>
-
-                                    {/* Effet de brillance au hover */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
-
-                                    {/* Contenu du bouton */}
-                                    <div className="relative flex items-center gap-2.5 text-white">
-                                        <Download className="h-5 w-5 group-hover:animate-bounce" />
-                                        <span>Installer</span>
-                                    </div>
-
-                                    {/* Ombre portée */}
-                                    <div className="absolute inset-0 rounded-xl shadow-lg group-hover:shadow-2xl group-hover:shadow-sky-500/50 transition-shadow duration-300"></div>
-                                </button>
+                        <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                            <div className="bg-white bg-opacity-20 p-5 rounded-2xl backdrop-blur-sm">
+                                <Smartphone className="h-14 w-14 text-white" />
                             </div>
+                            <div className="flex-1 text-center md:text-left">
+                                <h2 className="text-2xl font-bold mb-2">
+                                    Installez l'application TAFF Events
+                                </h2>
+                                <p className="text-purple-100">
+                                    Accès instantané, notifications en temps réel et mode hors ligne
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleInstallClick}
+                                className="bg-white text-purple-600 px-8 py-4 rounded-xl text-lg font-bold hover:bg-opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2 whitespace-nowrap"
+                            >
+                                <Download className="h-5 w-5" />
+                                Installer
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -375,7 +244,7 @@ export default function Home() {
             {showInstallGuide && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setShowInstallGuide(false)}>
                     <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md p-6 sm:p-8 relative" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setShowInstallGuide(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600" aria-label="Fermer le guide d'installation">
+                        <button onClick={() => setShowInstallGuide(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                             <X className="h-6 w-6" />
                         </button>
                         <div className="text-center mb-6">
@@ -461,217 +330,6 @@ export default function Home() {
                     </div>
                 </div>
             )}
-
-            {/* Section Soirées disponibles */}
-            <section className="py-16 sm:py-24 bg-gradient-to-br from-gray-50 via-white to-sky-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-16">
-                    <div className="text-center mb-10">
-                        <span className="inline-block bg-sky-100 text-sky-700 text-sm font-bold px-4 py-2 rounded-full mb-4">
-                            🎉 Événements à venir
-                        </span>
-                        <h2 className="text-3xl sm:text-5xl font-bold text-gray-900 mb-4">
-                            Découvrez les prochaines soirées
-                        </h2>
-                        <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
-                            Rejoignez des événements professionnels près de chez vous
-                        </p>
-                    </div>
-
-                    {/* Filtre ville */}
-                    <div className="flex justify-center mb-10">
-                        <div className="relative w-full max-w-sm">
-                            <label htmlFor="city-filter" className="sr-only">Filtrer par ville</label>
-                            <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
-                            <select
-                                id="city-filter"
-                                value={cityFilter}
-                                onChange={(e) => setCityFilter(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium transition-all hover:border-gray-300 bg-white appearance-none"
-                                aria-label="Filtrer les événements par ville"
-                            >
-                                <option value="">Toutes les villes</option>
-                                {FRENCH_CITIES.map((city) => (
-                                    <option key={city} value={city}>{city}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Grille d'événements */}
-                    {eventsLoading ? (
-                        <div className="text-center py-16">
-                            <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500"></div>
-                            <p className="text-gray-500 mt-4">Chargement des événements...</p>
-                        </div>
-                    ) : filteredPublicEvents.length === 0 ? (
-                        <div className="text-center py-16">
-                            <div className="bg-gray-100 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <Calendar className="h-10 w-10 text-gray-400" />
-                            </div>
-                            <p className="text-xl font-bold text-gray-900 mb-2">
-                                {cityFilter ? 'Aucun événement dans cette ville' : 'Aucun événement à venir'}
-                            </p>
-                            <p className="text-gray-600 mb-4">
-                                {cityFilter ? 'Essayez une autre ville ou consultez tous les événements.' : 'Revenez bientôt pour découvrir de nouvelles soirées !'}
-                            </p>
-                            {cityFilter && (
-                                <button
-                                    onClick={() => setCityFilter('')}
-                                    className="inline-flex items-center gap-2 bg-sky-50 text-sky-600 px-5 py-2.5 rounded-xl font-bold hover:bg-sky-100 transition-all"
-                                >
-                                    <X className="h-4 w-4" />
-                                    Voir toutes les villes
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <>
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredPublicEvents.slice(0, 6).map((event, idx) => (
-                                    <Link
-                                        key={event.id}
-                                        href={`/register?redirect=/events/${event.id}`}
-                                        ref={(el: HTMLAnchorElement | null) => { cardsRef.current[idx] = el; }}
-                                        data-idx={idx}
-                                        className={`group bg-white rounded-2xl shadow-sm overflow-hidden hover:shadow-xl transition-all duration-500 hover:-translate-y-1 relative ${visibleCards.has(idx)
-                                            ? 'opacity-100 translate-y-0'
-                                            : 'opacity-0 translate-y-8'
-                                            } ${event.isFeatured
-                                                ? 'border-2 border-orange-300 ring-2 ring-orange-100 shadow-orange-100'
-                                                : 'border border-gray-100 hover:border-sky-200'
-                                            }`}
-                                        style={event.isFeatured ? { animation: 'flameGlow 2s ease-in-out infinite' } : {}}
-                                    >
-                                        {event.imageUrl ? (
-                                            <div className="h-48 bg-gray-200 overflow-hidden relative">
-                                                <img
-                                                    src={event.imageUrl}
-                                                    alt={event.title}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                />
-                                                <div className="absolute top-3 left-3 flex gap-2">
-                                                    <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm ${event.type === 'free' ? 'bg-emerald-500 bg-opacity-90 text-white' : 'bg-blue-500 bg-opacity-90 text-white'}`}>
-                                                        {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
-                                                    </span>
-                                                    {event.isFeatured && (
-                                                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold shadow-md backdrop-blur-sm bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center gap-1 animate-pulse">
-                                                            🔥 En vedette
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {event.isFeatured && (
-                                                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-t-2xl">
-                                                        {[...Array(15)].map((_, i) => (
-                                                            <span
-                                                                key={i}
-                                                                className="absolute w-2 h-5 rounded-full opacity-80"
-                                                                style={{
-                                                                    bottom: '-20px',
-                                                                    left: `${(i * 100) / 15}%`,
-                                                                    background: 'radial-gradient(circle, #ffd000, #ff4500, transparent)',
-                                                                    animation: `rise ${i % 2 === 0 ? '2s' : '1.5s'} linear infinite`,
-                                                                    animationDelay: `${i * 0.1}s`
-                                                                }}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className={`h-48 flex items-center justify-center relative ${event.isFeatured ? 'bg-gradient-to-br from-orange-50 to-amber-100' : 'bg-gradient-to-br from-sky-100 to-blue-100'}`}>
-                                                <Calendar className={`h-16 w-16 ${event.isFeatured ? 'text-orange-300' : 'text-sky-300'}`} />
-                                                <div className="absolute top-3 left-3 flex gap-2">
-                                                    <span className={`px-3 py-1 rounded-lg text-xs font-bold shadow-md ${event.type === 'free' ? 'bg-emerald-500 text-white' : 'bg-blue-500 text-white'}`}>
-                                                        {event.type === 'free' ? 'Gratuit' : `${event.price}€`}
-                                                    </span>
-                                                    {event.isFeatured && (
-                                                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold shadow-md bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center gap-1 animate-pulse">
-                                                            🔥 En vedette
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                {event.isFeatured && (
-                                                    <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-                                                        {[...Array(15)].map((_, i) => (
-                                                            <span
-                                                                key={i}
-                                                                className="absolute w-2 h-5 rounded-full opacity-80"
-                                                                style={{
-                                                                    bottom: '-20px',
-                                                                    left: `${(i * 100) / 15}%`,
-                                                                    background: 'radial-gradient(circle, #ffd000, #ff4500, transparent)',
-                                                                    animation: `rise ${i % 2 === 0 ? '2s' : '1.5s'} linear infinite`,
-                                                                    animationDelay: `${i * 0.1}s`
-                                                                }}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        <div className="p-5">
-                                            <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-sky-700 transition-colors line-clamp-1">
-                                                {event.title}
-                                            </h3>
-                                            <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">{event.description}</p>
-
-                                            <div className="space-y-2.5">
-                                                <div className="flex items-center gap-2.5 text-sm text-gray-600">
-                                                    <div className="w-8 h-8 bg-sky-50 rounded-lg flex items-center justify-center shrink-0">
-                                                        <Clock className="h-4 w-4 text-sky-500" />
-                                                    </div>
-                                                    <span className="font-medium">{format(new Date(event.date), 'EEEE d MMMM yyyy', { locale: fr })}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2.5 text-sm text-gray-600">
-                                                    <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center shrink-0">
-                                                        <MapPin className="h-4 w-4 text-purple-500" />
-                                                    </div>
-                                                    <span className="font-medium">{event.location}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2.5 text-sm text-gray-600">
-                                                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0">
-                                                        <Users className="h-4 w-4 text-emerald-500" />
-                                                    </div>
-                                                    <span className="font-medium">{event.currentAttendees}/{event.maxAttendees || '∞'} participants</span>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-4 bg-gradient-to-r from-sky-500 to-blue-600 text-white text-center py-2.5 rounded-xl font-bold text-sm group-hover:from-sky-600 group-hover:to-blue-700 transition-all">
-                                                S'inscrire →
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-
-                            {filteredPublicEvents.length > 6 && (
-                                <div className="text-center mt-10">
-                                    <Link
-                                        href="/register"
-                                        className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-bold hover:from-sky-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                                    >
-                                        Voir tous les événements
-                                        <ArrowRight className="h-5 w-5" />
-                                    </Link>
-                                </div>
-                            )}
-                        </>
-                    )}
-
-                    {/* CTA inscription */}
-                    <div className="mt-12 text-center">
-                        <p className="text-gray-500 mb-4">Créez un compte pour vous inscrire aux événements</p>
-                        <Link
-                            href="/register"
-                            className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white px-8 py-4 rounded-xl text-lg font-bold hover:from-sky-600 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                        >
-                            Créer un compte gratuitement
-                            <ArrowRight className="h-5 w-5" />
-                        </Link>
-                    </div>
-                </div>
-            </section>
 
             {/* Features Section */}
             <section className="py-24 bg-white">
