@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Euro, TrendingUp, RotateCcw, Loader2, CheckCircle, XCircle, Clock, AlertTriangle, Info, ChevronDown, ChevronRight, FileText, Calendar, Users } from 'lucide-react';
+import { ArrowLeft, Euro, TrendingUp, RotateCcw, Loader2, CheckCircle, XCircle, Clock, AlertTriangle, Info, ChevronDown, ChevronRight, FileText, Calendar, Users, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Navbar from '@/components/Navbar';
@@ -75,6 +75,8 @@ export default function MyPaymentsPage() {
     const [showFeeInfo, setShowFeeInfo] = useState(false);
     const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
     const [confirmRefund, setConfirmRefund] = useState<{ isOpen: boolean; paymentId: string | null; eventTitle: string | null; amount: number; participantName: string }>({ isOpen: false, paymentId: null, eventTitle: null, amount: 0, participantName: '' });
+    const [showRefundSuccess, setShowRefundSuccess] = useState(false);
+    const [refundSuccessData, setRefundSuccessData] = useState<{ amount: number; participantName: string; eventTitle: string } | null>(null);
 
     // Grouper les paiements par événement
     const eventGroups = useMemo<EventGroup[]>(() => {
@@ -157,7 +159,7 @@ export default function MyPaymentsPage() {
     };
 
     const handleRefund = async () => {
-        const { paymentId, eventTitle, participantName } = confirmRefund;
+        const { paymentId, eventTitle, participantName, amount } = confirmRefund;
         if (!paymentId) return;
 
         setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0, participantName: '' });
@@ -176,7 +178,8 @@ export default function MyPaymentsPage() {
             });
 
             if (res.ok) {
-                setMessage({ type: 'success', text: `Remboursement de ${participantName} effectué pour "${eventTitle}"` });
+                setRefundSuccessData({ amount, participantName, eventTitle: eventTitle || '' });
+                setShowRefundSuccess(true);
                 fetchPayments();
             } else {
                 const data = await res.json();
@@ -186,7 +189,6 @@ export default function MyPaymentsPage() {
             setMessage({ type: 'error', text: 'Erreur réseau' });
         } finally {
             setRefunding(null);
-            setTimeout(() => setMessage(null), 5000);
         }
     };
 
@@ -546,34 +548,96 @@ export default function MyPaymentsPage() {
 
             {/* Modal de confirmation de remboursement */}
             {confirmRefund.isOpen && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0, participantName: '' })}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-red-100">
-                                <RotateCcw className="h-6 w-6 text-red-600" />
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                        <div className="bg-gradient-to-r from-red-500 to-rose-600 text-white p-6 rounded-t-2xl text-center">
+                            <div className="bg-white/20 w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                <AlertCircle className="h-10 w-10" />
                             </div>
-                            <div className="flex-1">
-                                <h3 className="text-lg font-bold text-gray-900 mb-2">Confirmer le remboursement</h3>
-                                <p className="text-sm text-gray-600 mb-4">
-                                    Vous allez rembourser <strong>{confirmRefund.amount.toFixed(2)}€</strong> à <strong>{confirmRefund.participantName}</strong> pour l'inscription à <strong>"{confirmRefund.eventTitle}"</strong>.
-                                    <br /><br />
-                                    <span className="text-red-600 font-medium">Cette action est irréversible.</span> Le participant sera remboursé et son inscription sera annulée.
-                                </p>
-                                <div className="flex gap-3 justify-end">
-                                    <button
-                                        onClick={() => setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0, participantName: '' })}
-                                        className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-                                    >
-                                        Annuler
-                                    </button>
-                                    <button
-                                        onClick={handleRefund}
-                                        className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors"
-                                    >
-                                        Rembourser
-                                    </button>
+                            <h2 className="text-2xl font-bold">Confirmer le remboursement</h2>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="text-center">
+                                <p className="text-gray-600 mb-4">Vous êtes sur le point de rembourser :</p>
+
+                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                                    <p className="font-bold text-gray-900 text-lg mb-2">{confirmRefund.participantName}</p>
+                                    <p className="text-sm text-gray-600 mb-2">{confirmRefund.eventTitle}</p>
+                                    <p className="text-3xl font-bold text-red-600">{confirmRefund.amount.toFixed(2)}€</p>
+                                </div>
+
+                                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                    <p className="text-sm text-red-700 font-medium flex items-center gap-2 justify-center">
+                                        <AlertCircle className="h-4 w-4" />
+                                        Cette action est irréversible
+                                    </p>
+                                    <p className="text-xs text-red-600 mt-1">Le participant sera remboursé et son inscription annulée</p>
                                 </div>
                             </div>
+
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    onClick={() => setConfirmRefund({ isOpen: false, paymentId: null, eventTitle: null, amount: 0, participantName: '' })}
+                                    className="flex-1 py-3 rounded-xl font-semibold text-gray-600 hover:bg-gray-100 transition-all"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    onClick={handleRefund}
+                                    className="flex-1 py-3 rounded-xl font-semibold bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 transition-all"
+                                >
+                                    Confirmer le remboursement
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Succès Remboursement */}
+            {showRefundSuccess && refundSuccessData && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+                        <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-t-2xl text-center">
+                            <div className="bg-white/20 w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                <CheckCircle className="h-10 w-10" />
+                            </div>
+                            <h2 className="text-2xl font-bold">Remboursement effectué !</h2>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="text-center">
+                                <p className="text-gray-600 mb-6">Le remboursement a été traité avec succès</p>
+
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 mb-4">
+                                    <div className="text-4xl font-bold text-emerald-600 mb-2">{refundSuccessData.amount.toFixed(2)}€</div>
+                                    <div className="text-sm text-emerald-700 font-medium mb-1">Remboursé à</div>
+                                    <div className="text-base font-bold text-gray-900">{refundSuccessData.participantName}</div>
+                                </div>
+
+                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
+                                    <p className="text-sm text-gray-600">
+                                        <span className="font-bold text-gray-900">Événement :</span> {refundSuccessData.eventTitle}
+                                    </p>
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                                    <p className="text-sm text-blue-700">
+                                        Le participant recevra le remboursement sous 5-10 jours ouvrés
+                                    </p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    setShowRefundSuccess(false);
+                                    setRefundSuccessData(null);
+                                }}
+                                className="w-full py-3 rounded-xl font-semibold bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700 transition-all"
+                            >
+                                Fermer
+                            </button>
                         </div>
                     </div>
                 </div>
