@@ -680,7 +680,7 @@ export default function CreateEventPage() {
                                 <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
                                     <Check className="h-4 w-4 text-emerald-600 shrink-0" />
                                     <p className="text-xs text-emerald-700 font-medium">
-                                        Coordonnées GPS détectées : {latitude.toFixed(6)}, {longitude.toFixed(6)} (rayon {radius}m)
+                                        Coordonnées GPS détectées : {latitude.toFixed(6)}, {longitude.toFixed(6)}
                                     </p>
                                 </div>
                             )}
@@ -688,6 +688,28 @@ export default function CreateEventPage() {
                                 <p className="mt-1 text-sm text-red-600 font-medium">{errors.address.message}</p>
                             )}
                         </div>
+
+                        {eventType === 'paid' && latitude && longitude && (
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-blue-500" />
+                                    Rayon du périmètre approximatif (en mètres)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="100"
+                                    max="5000"
+                                    step="50"
+                                    value={radius}
+                                    onChange={(e) => setRadius(parseInt(e.target.value) || 500)}
+                                    className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium placeholder-gray-400 transition-all hover:border-gray-300"
+                                    placeholder="500"
+                                />
+                                <p className="mt-1.5 text-xs text-gray-400">
+                                    Zone approximative affichée avant inscription (recommandé : 500m)
+                                </p>
+                            </div>
+                        )}
 
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">

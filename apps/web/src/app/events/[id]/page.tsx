@@ -465,7 +465,11 @@ export default function EventDetailPage() {
                             {/* Carte Google Maps */}
                             <div className="mt-6">
                                 <EventMap
-                                    address={event.address}
+                                    address={
+                                        event.type === 'free' || isOrganizer || isRegistered
+                                            ? event.address
+                                            : '🔒 Adresse révélée après inscription'
+                                    }
                                     latitude={(event as any).latitude}
                                     longitude={(event as any).longitude}
                                     radius={(event as any).radius}
