@@ -309,3 +309,19 @@ model ContactList {
   
   @@index([userId])
 }
+
+model Rating {
+  id             String   @id @default(cuid())
+  eventId        String   // L'événement noté
+  organizerId    String   // L'organisateur noté
+  userId         String   // L'utilisateur qui note
+  rating         Int      // Note de 1 à 5
+  comment        String?  // Commentaire optionnel
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@unique([eventId, userId]) // Un utilisateur ne peut noter qu'une fois par événement
+  @@index([organizerId])
+  @@index([eventId])
+  @@index([userId])
+}

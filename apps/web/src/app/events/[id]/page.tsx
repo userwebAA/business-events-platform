@@ -7,6 +7,7 @@ import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, A
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import EventMap from '@/components/EventMap';
+import RatingModal from '@/components/RatingModal';
 import { Event } from 'shared';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -43,6 +44,8 @@ export default function EventDetailPage() {
     const [selectedContactLists, setSelectedContactLists] = useState<string[]>([]);
     const [showFollowUpSuccess, setShowFollowUpSuccess] = useState(false);
     const [followUpResult, setFollowUpResult] = useState<{ sent: number; failed: number; total: number } | null>(null);
+    const [showRatingModal, setShowRatingModal] = useState(false);
+    const [hasRated, setHasRated] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -124,6 +127,37 @@ export default function EventDetailPage() {
 
         fetchData();
     }, [params.id, user]);
+
+    // Vérifier si l'utilisateur doit noter l'événement
+    useEffect(() => {
+        const checkRatingStatus = async () => {
+            if (!event || !user || !isRegistered) return;
+
+            // Vérifier si l'événement est terminé
+            const eventEndDate = event.endDate || event.date;
+            const isEventEnded = new Date(eventEndDate) < new Date();
+
+            if (!isEventEnded) return;
+
+            // Vérifier si l'utilisateur a déjà noté
+            const ratingKey = `rated_event_${event.id}_${user.id}`;
+            const alreadyRated = localStorage.getItem(ratingKey);
+
+            if (alreadyRated) {
+                setHasRated(true);
+                return;
+            }
+
+            // Afficher le modal de notation après 2 secondes
+            const timer = setTimeout(() => {
+                setShowRatingModal(true);
+            }, 2000);
+
+            return () => clearTimeout(timer);
+        };
+
+        checkRatingStatus();
+    }, [event, user, isRegistered]);
 
     const handleShare = useCallback(async () => {
         const url = window.location.href;
@@ -220,6 +254,38 @@ export default function EventDetailPage() {
             setCancelError('Erreur réseau');
         } finally {
             setCancelling(false);
+        }
+    };
+
+    const handleSubmitRating = async (rating: number, comment: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await fetch('/api/ratings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    eventId: event?.id,
+                    rating,
+                    comment,
+                }),
+            });
+
+            if (res.ok) {
+                // Marquer comme noté dans le localStorage
+                const ratingKey = `rated_event_${event?.id}_${user?.id}`;
+                localStorage.setItem(ratingKey, 'true');
+                setHasRated(true);
+                setShowRatingModal(false);
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Erreur lors de la soumission de l\'avis');
+            }
+        } catch (error) {
+            console.error('Erreur lors de la soumission de l\'avis:', error);
+            alert('Erreur réseau');
         }
     };
 
@@ -1150,6 +1216,15 @@ export default function EventDetailPage() {
                     </div>
                 </div>
             )}
+
+            {/* Modal de notation */}
+            <RatingModal
+                isOpen={showRatingModal}
+                onClose={() => setShowRatingModal(false)}
+                eventId={event?.id || ''}
+                eventTitle={event?.title || ''}
+                onSubmit={handleSubmitRating}
+            />
         </div>
     );
 }
