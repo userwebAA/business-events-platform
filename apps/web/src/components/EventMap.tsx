@@ -55,23 +55,41 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
                         return;
                     }
 
-                    const geocoder = new google.maps.Geocoder();
-                    const result = await geocoder.geocode({ address });
+                    console.log('🗺️ Géocodage de l\'adresse:', address);
+                    const geocoder = new window.google.maps.Geocoder();
 
-                    if (result.results[0]) {
-                        lat = result.results[0].geometry.location.lat();
-                        lng = result.results[0].geometry.location.lng();
-                    } else {
-                        setError('Impossible de localiser l\'adresse');
+                    try {
+                        const result = await geocoder.geocode({ address });
+
+                        if (result.results && result.results[0]) {
+                            lat = result.results[0].geometry.location.lat();
+                            lng = result.results[0].geometry.location.lng();
+                            console.log('✅ Coordonnées trouvées:', { lat, lng });
+                        } else {
+                            console.error('❌ Aucun résultat de géocodage');
+                            setError('Impossible de localiser l\'adresse');
+                            setIsLoading(false);
+                            return;
+                        }
+                    } catch (err) {
+                        console.error('❌ Erreur géocodage:', err);
+                        setError('Erreur lors du géocodage de l\'adresse');
                         setIsLoading(false);
                         return;
                     }
                 }
 
+                if (!lat || !lng) {
+                    setError('Coordonnées GPS manquantes');
+                    setIsLoading(false);
+                    return;
+                }
+
                 const center = { lat, lng };
+                console.log('📍 Centre de la carte:', center, 'showExactLocation:', showExactLocation);
 
                 // Créer la carte
-                const map = new google.maps.Map(mapRef.current, {
+                const map = new window.google.maps.Map(mapRef.current, {
                     center,
                     zoom: showExactLocation ? 16 : 14,
                     mapTypeControl: false,
@@ -88,14 +106,16 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
 
                 if (showExactLocation) {
                     // Afficher le marqueur exact
-                    const marker = new google.maps.Marker({
+                    console.log('🎯 Création du marqueur à la position:', center);
+                    const marker = new window.google.maps.Marker({
                         position: center,
                         map,
                         title: address,
                     });
+                    console.log('✅ Marqueur créé:', marker);
 
                     // Ajouter une info window avec l'adresse
-                    const infoWindow = new google.maps.InfoWindow({
+                    const infoWindow = new window.google.maps.InfoWindow({
                         content: `<div style="padding: 8px; font-family: sans-serif;">
                             <div style="font-weight: bold; color: #1E40AF; margin-bottom: 4px;">📍 Adresse exacte</div>
                             <div style="color: #374151;">${address}</div>
@@ -108,8 +128,9 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
                 } else {
                     // Afficher un cercle de périmètre approximatif
                     const circleRadius = radius || 500; // 500m par défaut
+                    console.log('⭕ Création du cercle de rayon:', circleRadius);
 
-                    new google.maps.Circle({
+                    new window.google.maps.Circle({
                         strokeColor: '#1E40AF',
                         strokeOpacity: 0.8,
                         strokeWeight: 2,
@@ -121,11 +142,11 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
                     });
 
                     // Marqueur au centre du cercle
-                    new google.maps.Marker({
+                    new window.google.maps.Marker({
                         position: center,
                         map,
                         icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
+                            path: window.google.maps.SymbolPath.CIRCLE,
                             scale: 8,
                             fillColor: '#1E40AF',
                             fillOpacity: 0.8,
