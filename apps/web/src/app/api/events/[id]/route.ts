@@ -47,10 +47,14 @@ export async function GET(
 
         // Masquer l'adresse exacte pour les événements payants
         // L'adresse sera accessible uniquement via /api/events/:id/address après inscription
+        // On conserve latitude/longitude/radius pour afficher le périmètre approximatif sur la carte
         if (event.type === 'paid') {
             return NextResponse.json({
                 ...eventWithOrganizer,
                 address: '🔒 Adresse révélée après inscription',
+                latitude: event.latitude,
+                longitude: event.longitude,
+                radius: event.radius,
             });
         }
 

@@ -46,6 +46,12 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
                     return;
                 }
 
+                // Si l'adresse est masquée (placeholder), ne pas géocoder
+                if (address.includes('🔒') || address.includes('Adresse révélée')) {
+                    setError('Coordonnées GPS non configurées pour cet événement');
+                    return;
+                }
+
                 // Sinon, géocoder l'adresse avec Nominatim (OpenStreetMap)
                 const response = await fetch(
                     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
