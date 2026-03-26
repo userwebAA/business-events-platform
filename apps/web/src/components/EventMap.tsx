@@ -1,159 +1,77 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Circle, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import { MapPin, Loader2 } from 'lucide-react';
+import 'leaflet/dist/leaflet.css';
 
 interface EventMapProps {
     address: string;
     latitude?: number;
     longitude?: number;
     radius?: number;
-    showExactLocation: boolean; // true si l'utilisateur est inscrit
+    showExactLocation: boolean;
+}
+
+// Fix pour les icônes Leaflet par défaut
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+});
+
+// Composant pour centrer la carte
+function MapCenter({ center, zoom }: { center: [number, number]; zoom: number }) {
+    const map = useMap();
+    useEffect(() => {
+        map.setView(center, zoom);
+    }, [center, zoom, map]);
+    return null;
 }
 
 export default function EventMap({ address, latitude, longitude, radius, showExactLocation }: EventMapProps) {
-    const mapRef = useRef<HTMLDivElement>(null);
+    const [coords, setCoords] = useState<[number, number] | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const loadGoogleMaps = async () => {
+        const getCoordinates = async () => {
             try {
-                // Vérifier si Google Maps est déjà chargé
-                if (window.google && window.google.maps) {
-                    initMap();
+                // Si on a déjà les coordonnées
+                if (latitude && longitude) {
+                    setCoords([latitude, longitude]);
+                    setIsLoading(false);
                     return;
                 }
 
-                // Charger Google Maps API
-                const script = document.createElement('script');
-                script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=geometry`;
-                script.async = true;
-                script.defer = true;
-                script.onload = () => initMap();
-                script.onerror = () => {
-                    setError('Erreur lors du chargement de Google Maps');
-                    setIsLoading(false);
-                };
-                document.head.appendChild(script);
-            } catch (err) {
-                setError('Erreur lors de l\'initialisation de la carte');
-                setIsLoading(false);
-            }
-        };
+                // Sinon, géocoder l'adresse avec Nominatim (OpenStreetMap)
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
+                );
 
-        const initMap = async () => {
-            if (!mapRef.current) return;
-
-            try {
-                let lat = latitude;
-                let lng = longitude;
-
-                // Si pas de coordonnées, géocoder l'adresse
-                if (!lat || !lng) {
-                    const geocoder = new google.maps.Geocoder();
-                    const result = await geocoder.geocode({ address });
-                    if (result.results[0]) {
-                        lat = result.results[0].geometry.location.lat();
-                        lng = result.results[0].geometry.location.lng();
-                    } else {
-                        setError('Impossible de localiser l\'adresse');
-                        setIsLoading(false);
-                        return;
-                    }
+                if (!response.ok) {
+                    throw new Error('Erreur lors du géocodage');
                 }
 
-                const center = { lat, lng };
+                const data = await response.json();
 
-                // Créer la carte
-                const map = new google.maps.Map(mapRef.current, {
-                    center,
-                    zoom: showExactLocation ? 16 : 14,
-                    mapTypeControl: false,
-                    streetViewControl: false,
-                    fullscreenControl: true,
-                    styles: [
-                        {
-                            featureType: 'poi',
-                            elementType: 'labels',
-                            stylers: [{ visibility: 'off' }]
-                        }
-                    ]
-                });
-
-                if (showExactLocation) {
-                    // Afficher le marqueur exact
-                    new google.maps.Marker({
-                        position: center,
-                        map,
-                        title: address,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            scale: 10,
-                            fillColor: '#1E40AF',
-                            fillOpacity: 1,
-                            strokeColor: '#ffffff',
-                            strokeWeight: 3,
-                        }
-                    });
-
-                    // Ajouter une info window avec l'adresse
-                    const infoWindow = new google.maps.InfoWindow({
-                        content: `<div style="padding: 8px; font-family: sans-serif;">
-                            <div style="font-weight: bold; color: #1E40AF; margin-bottom: 4px;">📍 Adresse exacte</div>
-                            <div style="color: #374151;">${address}</div>
-                        </div>`
-                    });
-
-                    const marker = new google.maps.Marker({
-                        position: center,
-                        map,
-                        title: address,
-                    });
-
-                    marker.addListener('click', () => {
-                        infoWindow.open(map, marker);
-                    });
+                if (data && data.length > 0) {
+                    setCoords([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
                 } else {
-                    // Afficher un cercle de périmètre approximatif
-                    const circleRadius = radius || 500; // 500m par défaut
-
-                    new google.maps.Circle({
-                        strokeColor: '#1E40AF',
-                        strokeOpacity: 0.8,
-                        strokeWeight: 2,
-                        fillColor: '#1E40AF',
-                        fillOpacity: 0.2,
-                        map,
-                        center,
-                        radius: circleRadius,
-                    });
-
-                    // Marqueur au centre du cercle
-                    new google.maps.Marker({
-                        position: center,
-                        map,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            scale: 8,
-                            fillColor: '#1E40AF',
-                            fillOpacity: 0.8,
-                            strokeColor: '#ffffff',
-                            strokeWeight: 2,
-                        }
-                    });
+                    setError('Impossible de localiser l\'adresse');
                 }
-
-                setIsLoading(false);
             } catch (err) {
-                console.error('Erreur lors de l\'initialisation de la carte:', err);
-                setError('Erreur lors de l\'affichage de la carte');
+                console.error('Erreur géocodage:', err);
+                setError('Erreur lors de la localisation');
+            } finally {
                 setIsLoading(false);
             }
         };
 
-        loadGoogleMaps();
-    }, [address, latitude, longitude, radius, showExactLocation]);
+        getCoordinates();
+    }, [address, latitude, longitude]);
 
     if (error) {
         return (
@@ -165,18 +83,56 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
         );
     }
 
+    if (isLoading || !coords) {
+        return (
+            <div className="bg-gray-50 rounded-2xl p-8 flex items-center justify-center border border-gray-200" style={{ height: '400px' }}>
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    const zoom = showExactLocation ? 16 : 14;
+    const circleRadius = radius || 500;
+
     return (
         <div className="relative">
-            {isLoading && (
-                <div className="absolute inset-0 bg-gray-50 rounded-2xl flex items-center justify-center z-10">
-                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                </div>
-            )}
-            <div
-                ref={mapRef}
-                className="w-full h-[400px] rounded-2xl border border-gray-200 shadow-sm"
-                style={{ minHeight: '400px' }}
-            />
+            <div className="w-full h-[400px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm">
+                <MapContainer
+                    center={coords}
+                    zoom={zoom}
+                    style={{ height: '100%', width: '100%' }}
+                    scrollWheelZoom={false}
+                >
+                    <MapCenter center={coords} zoom={zoom} />
+                    <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+
+                    {showExactLocation ? (
+                        <Marker position={coords}>
+                            <Popup>
+                                <div className="text-sm">
+                                    <div className="font-bold text-blue-900 mb-1">📍 Adresse exacte</div>
+                                    <div className="text-gray-700">{address}</div>
+                                </div>
+                            </Popup>
+                        </Marker>
+                    ) : (
+                        <Circle
+                            center={coords}
+                            radius={circleRadius}
+                            pathOptions={{
+                                color: '#1E40AF',
+                                fillColor: '#1E40AF',
+                                fillOpacity: 0.2,
+                                weight: 2,
+                            }}
+                        />
+                    )}
+                </MapContainer>
+            </div>
+
             {!showExactLocation && (
                 <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
                     <MapPin className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
