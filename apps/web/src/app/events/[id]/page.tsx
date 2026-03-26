@@ -473,7 +473,7 @@ export default function EventDetailPage() {
                                     latitude={(event as any).latitude}
                                     longitude={(event as any).longitude}
                                     radius={(event as any).radius}
-                                    showExactLocation={isOrganizer || isRegistered || event.type === 'free'}
+                                    showExactLocation={event.type === 'free' || isOrganizer}
                                 />
                             </div>
 

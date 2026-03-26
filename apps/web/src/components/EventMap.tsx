@@ -131,10 +131,10 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
                     console.log('⭕ Création du cercle de rayon:', circleRadius);
 
                     new window.google.maps.Circle({
-                        strokeColor: '#1E40AF',
+                        strokeColor: '#DC2626',
                         strokeOpacity: 0.8,
                         strokeWeight: 2,
-                        fillColor: '#1E40AF',
+                        fillColor: '#DC2626',
                         fillOpacity: 0.2,
                         map,
                         center,
@@ -148,7 +148,7 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
                         icon: {
                             path: window.google.maps.SymbolPath.CIRCLE,
                             scale: 8,
-                            fillColor: '#1E40AF',
+                            fillColor: '#DC2626',
                             fillOpacity: 0.8,
                             strokeColor: '#ffffff',
                             strokeWeight: 2,
@@ -190,11 +190,11 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
                 style={{ minHeight: '400px' }}
             />
             {!showExactLocation && (
-                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
                     <div className="text-sm">
-                        <p className="font-semibold text-blue-900 mb-1">Zone approximative</p>
-                        <p className="text-blue-700">
+                        <p className="font-semibold text-red-900 mb-1">Zone approximative</p>
+                        <p className="text-red-700">
                             L'adresse exacte sera révélée après votre inscription à l'événement.
                         </p>
                     </div>
