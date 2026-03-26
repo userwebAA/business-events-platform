@@ -22,18 +22,27 @@ RESEND_API_KEY="re_..."
 
 ## Cartes de Localisation
 
-La plateforme utilise **Leaflet + OpenStreetMap** pour afficher les cartes de localisation des événements.
+La plateforme utilise **Google Maps** pour afficher les cartes de localisation des événements.
 
-### Avantages
-- ✅ **100% Gratuit** - Pas de frais, pas de quota
-- ✅ **Open Source** - Leaflet et OpenStreetMap sont open-source
-- ✅ **Géocodage gratuit** - Via Nominatim (OpenStreetMap)
-- ✅ **Aucune clé API requise** - Fonctionne immédiatement
+### Configuration requise
+```env
+# Google Maps API (pour la carte de localisation des événements)
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="AIza..."
+```
+
+### Obtenir une clé API Google Maps
+
+1. Allez sur [Google Cloud Console](https://console.cloud.google.com/)
+2. Créez un nouveau projet ou sélectionnez un projet existant
+3. Activez l'API **Maps JavaScript API** et **Geocoding API**
+4. Créez des identifiants (API Key)
+5. Restreignez la clé à votre domaine pour la sécurité
+6. Copiez la clé dans `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
 
 ### Fonctionnalités
 - Affichage d'un **périmètre approximatif** (cercle) avant inscription
 - Affichage de l'**adresse exacte** (marqueur) après inscription
-- Géocodage automatique des adresses
+- Géocodage automatique des adresses dans le formulaire de création
 - Cartes interactives avec zoom et déplacement
 
 ## Notes Importantes
@@ -41,10 +50,3 @@ La plateforme utilise **Leaflet + OpenStreetMap** pour afficher les cartes de lo
 - **NEXT_PUBLIC_** : Les variables avec ce préfixe sont exposées côté client
 - Ne commitez **JAMAIS** le fichier `.env.local` dans Git
 - Pour la production, configurez ces variables dans votre plateforme de déploiement (Vercel, etc.)
-
-## Respect de la Politique d'Utilisation
-
-Nominatim (géocodage OpenStreetMap) a une politique d'utilisation équitable :
-- Maximum 1 requête par seconde
-- Utilisez un User-Agent identifiable
-- Pour un usage intensif, envisagez d'héberger votre propre instance Nominatim

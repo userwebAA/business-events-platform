@@ -10,6 +10,7 @@
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^2.0.2",
     "@hookform/resolvers": "^3.3.2",
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/adapter-neon": "^7.4.2",
@@ -20,7 +21,6 @@
     "@stripe/stripe-js": "^2.4.0",
     "@types/bcrypt": "^6.0.0",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/leaflet": "^1.9.21",
     "@types/pdfkit": "^0.17.4",
     "@types/qrcode": "^1.5.6",
     "axios": "^1.6.2",
@@ -31,7 +31,6 @@
     "express-rate-limit": "^8.2.1",
     "html5-qrcode": "^2.3.8",
     "jsonwebtoken": "^9.0.3",
-    "leaflet": "^1.9.4",
     "lucide-react": "^0.294.0",
     "next": "^14.0.4",
     "nodemailer": "^7.0.12",
@@ -45,7 +44,6 @@
     "react-datepicker": "^9.1.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.48.2",
-    "react-leaflet": "^4.2.1",
     "recharts": "^3.7.0",
     "stripe": "^20.3.1",
     "tailwind-merge": "^2.1.0",

@@ -80,7 +80,7 @@ export default function CreateEventPage() {
         },
     });
 
-    // Géocodage automatique quand l'adresse change
+    // Géocodage automatique quand l'adresse change (Google Maps)
     useEffect(() => {
         const address = watch('address');
         const location = watch('location');
@@ -92,14 +92,15 @@ export default function CreateEventPage() {
             try {
                 const fullAddress = `${address}, ${location}, France`;
                 const response = await fetch(
-                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`
+                    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`
                 );
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data && data.length > 0) {
-                        setLatitude(parseFloat(data[0].lat));
-                        setLongitude(parseFloat(data[0].lon));
+                    if (data.results && data.results.length > 0) {
+                        const location = data.results[0].geometry.location;
+                        setLatitude(location.lat);
+                        setLongitude(location.lng);
                     }
                 }
             } catch (error) {
