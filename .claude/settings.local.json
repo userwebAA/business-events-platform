@@ -7,7 +7,9 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(docker --version)",
       "Bash(n8n --version)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5678)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5678)",
+      "Bash(rtk ls:*)",
+      "Bash(python3 \".claude/skills/ui-ux-pro-max/scripts/search.py\" \"business events saas professional networking platform\" --design-system -p \"TAFF Events\")"
     ]
   }
 }

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(C:/Python314/python.exe \".claude/skills/ui-ux-pro-max/scripts/search.py\" \"futuristic dark saas events platform 3D premium\" --design-system -p \"TAFF Events\")",
+      "Bash(C:/Python314/python.exe \".claude/skills/ui-ux-pro-max/scripts/search.py\" \"glassmorphism dark neon\" --domain style)"
+    ]
+  }
+}
