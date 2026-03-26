@@ -35,6 +35,10 @@ export default function CreateEventPage() {
     const [contactLists, setContactLists] = useState<any[]>([]);
     const [selectedContactLists, setSelectedContactLists] = useState<string[]>([]);
     const [invitationStatus, setInvitationStatus] = useState<string | null>(null);
+    const [latitude, setLatitude] = useState<number | null>(null);
+    const [longitude, setLongitude] = useState<number | null>(null);
+    const [radius, setRadius] = useState<number>(500);
+    const [geocoding, setGeocoding] = useState(false);
 
     // Vérifier le statut d'identité
     useEffect(() => {
@@ -75,6 +79,39 @@ export default function CreateEventPage() {
             registrationFields: defaultRegistrationFields,
         },
     });
+
+    // Géocodage automatique quand l'adresse change
+    useEffect(() => {
+        const address = watch('address');
+        const location = watch('location');
+
+        if (!address || !location) return;
+
+        const geocodeAddress = async () => {
+            setGeocoding(true);
+            try {
+                const fullAddress = `${address}, ${location}, France`;
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.length > 0) {
+                        setLatitude(parseFloat(data[0].lat));
+                        setLongitude(parseFloat(data[0].lon));
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur géocodage:', error);
+            } finally {
+                setGeocoding(false);
+            }
+        };
+
+        const timeoutId = setTimeout(geocodeAddress, 1000);
+        return () => clearTimeout(timeoutId);
+    }, [watch('address'), watch('location')]);
 
 
     // Charger les événements existants pour la duplication + listes de contacts
@@ -148,6 +185,9 @@ export default function CreateEventPage() {
                 registrationFields,
                 endDate: data.date,
                 imageUrl: imagePreview || undefined,
+                latitude: latitude || undefined,
+                longitude: longitude || undefined,
+                radius: radius || undefined,
             };
 
             console.log('📦 Données à envoyer:', eventData);
@@ -619,15 +659,30 @@ export default function CreateEventPage() {
                                 <MapPin className="h-4 w-4 text-emerald-500" />
                                 Adresse complète *
                             </label>
-                            <input
-                                {...register('address')}
-                                type="text"
-                                className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium placeholder-gray-400 transition-all hover:border-gray-300"
-                                placeholder="123 Rue de la République"
-                            />
+                            <div className="relative">
+                                <input
+                                    {...register('address')}
+                                    type="text"
+                                    className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium placeholder-gray-400 transition-all hover:border-gray-300"
+                                    placeholder="123 Rue de la République"
+                                />
+                                {geocoding && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                        <Loader2 className="h-5 w-5 animate-spin text-sky-500" />
+                                    </div>
+                                )}
+                            </div>
                             <p className="mt-1.5 text-xs text-gray-400">
                                 Révélée après inscription uniquement
                             </p>
+                            {latitude && longitude && (
+                                <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+                                    <Check className="h-4 w-4 text-emerald-600 shrink-0" />
+                                    <p className="text-xs text-emerald-700 font-medium">
+                                        Coordonnées GPS détectées : {latitude.toFixed(6)}, {longitude.toFixed(6)} (rayon {radius}m)
+                                    </p>
+                                </div>
+                            )}
                             {errors.address && (
                                 <p className="mt-1 text-sm text-red-600 font-medium">{errors.address.message}</p>
                             )}
@@ -891,8 +946,8 @@ export default function CreateEventPage() {
                                                 );
                                             }}
                                             className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left ${isSelected
-                                                    ? 'border-violet-400 bg-violet-50'
-                                                    : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                                                ? 'border-violet-400 bg-violet-50'
+                                                : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                                                 }`}
                                         >
                                             <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${isSelected ? 'bg-violet-500 border-violet-500' : 'border-gray-300'
