@@ -54,6 +54,7 @@
   },
   "devDependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@types/google.maps": "^3.58.1",
     "@types/node": "^20.10.0",
     "@types/nodemailer": "^7.0.4",
     "@types/react": "^18.2.42",

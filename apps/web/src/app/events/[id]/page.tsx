@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Calendar, MapPin, Users, ArrowLeft, Clock, Check, Lock, Euro, Share2, ArrowRight, Ticket, AlertTriangle, XCircle, Loader2, User as UserIcon, FileText, Heart, QrCode, ScanLine, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
+import EventMap from '@/components/EventMap';
 import { Event } from 'shared';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -460,6 +461,17 @@ export default function EventDetailPage() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Carte Google Maps */}
+                            <div className="mt-6">
+                                <EventMap
+                                    address={event.address}
+                                    latitude={(event as any).latitude}
+                                    longitude={(event as any).longitude}
+                                    radius={(event as any).radius}
+                                    showExactLocation={isOrganizer || isRegistered || event.type === 'free'}
+                                />
+                            </div>
 
                             {/* Bouton Ajouter à Google Agenda */}
                             {!isCancelled && event.date && new Date(event.date) > new Date() && (

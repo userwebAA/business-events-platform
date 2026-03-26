@@ -14,6 +14,9 @@ model Event {
   endDate           DateTime?
   location          String
   address           String
+  latitude          Float?   // Latitude pour la carte
+  longitude         Float?   // Longitude pour la carte
+  radius            Int?     // Rayon en mètres pour le périmètre approximatif (ex: 500m)
   organizerId       String
   type              String   // 'free' or 'paid'
   price             Float?
