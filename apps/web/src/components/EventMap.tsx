@@ -126,33 +126,30 @@ export default function EventMap({ address, latitude, longitude, radius, showExa
                         infoWindow.open(map, marker);
                     });
                 } else {
-                    // Afficher un cercle de périmètre approximatif
-                    const circleRadius = radius || 500; // 500m par défaut
-                    console.log('⭕ Création du cercle de rayon:', circleRadius);
+                    // Afficher un carré de périmètre approximatif
+                    const squareRadius = radius || 1000; // 1km par défaut
+                    console.log('⬛ Création du carré de rayon:', squareRadius);
 
-                    new window.google.maps.Circle({
+                    // Calculer les coins du carré (rectangle)
+                    const latOffset = squareRadius / 111320; // 1 degré de latitude ≈ 111.32 km
+                    const lngOffset = squareRadius / (111320 * Math.cos(lat * Math.PI / 180));
+
+                    const bounds = {
+                        north: lat + latOffset,
+                        south: lat - latOffset,
+                        east: lng + lngOffset,
+                        west: lng - lngOffset,
+                    };
+
+                    // Créer le rectangle rouge
+                    new window.google.maps.Rectangle({
                         strokeColor: '#DC2626',
                         strokeOpacity: 0.8,
                         strokeWeight: 2,
                         fillColor: '#DC2626',
                         fillOpacity: 0.2,
                         map,
-                        center,
-                        radius: circleRadius,
-                    });
-
-                    // Marqueur au centre du cercle
-                    new window.google.maps.Marker({
-                        position: center,
-                        map,
-                        icon: {
-                            path: window.google.maps.SymbolPath.CIRCLE,
-                            scale: 8,
-                            fillColor: '#DC2626',
-                            fillOpacity: 0.8,
-                            strokeColor: '#ffffff',
-                            strokeWeight: 2,
-                        }
+                        bounds,
                     });
                 }
 

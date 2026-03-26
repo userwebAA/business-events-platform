@@ -37,7 +37,7 @@ export default function CreateEventPage() {
     const [invitationStatus, setInvitationStatus] = useState<string | null>(null);
     const [latitude, setLatitude] = useState<number | null>(null);
     const [longitude, setLongitude] = useState<number | null>(null);
-    const [radius, setRadius] = useState<number>(500);
+    const [radius, setRadius] = useState<number>(1000);
     const [geocoding, setGeocoding] = useState(false);
 
     // Vérifier le statut d'identité
@@ -701,12 +701,12 @@ export default function CreateEventPage() {
                                     max="5000"
                                     step="50"
                                     value={radius}
-                                    onChange={(e) => setRadius(parseInt(e.target.value) || 500)}
+                                    onChange={(e) => setRadius(parseInt(e.target.value) || 1000)}
                                     className="w-full px-4 py-3.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 font-medium placeholder-gray-400 transition-all hover:border-gray-300"
-                                    placeholder="500"
+                                    placeholder="1000"
                                 />
                                 <p className="mt-1.5 text-xs text-gray-400">
-                                    Zone approximative affichée avant inscription (recommandé : 500m)
+                                    Zone approximative carrée affichée avant inscription (recommandé : 1000m = 1km)
                                 </p>
                             </div>
                         )}
