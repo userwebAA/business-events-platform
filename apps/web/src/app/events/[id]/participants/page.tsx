@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Mail, Phone, Building, Users, Briefcase, Linkedin, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Building, Users, Briefcase, Linkedin, ChevronRight, FileDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Badge from '@/components/Badge';
 import { Event, Registration, BadgeType } from 'shared';
@@ -27,6 +27,8 @@ export default function EventParticipantsPage() {
     const [registrations, setRegistrations] = useState<(Registration & { userProfile?: UserProfile | null })[]>([]);
     const [loading, setLoading] = useState(true);
     const [hasAccess, setHasAccess] = useState(false);
+    const [isEventEnded, setIsEventEnded] = useState(false);
+    const [isOrganizer, setIsOrganizer] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -36,12 +38,19 @@ export default function EventParticipantsPage() {
                 const eventData = await eventRes.json();
                 const eventWithDate = {
                     ...eventData,
-                    date: new Date(eventData.date)
+                    date: new Date(eventData.date),
+                    endDate: eventData.endDate ? new Date(eventData.endDate) : undefined
                 };
                 setEvent(eventWithDate);
 
+                // Vérifier si l'événement est terminé
+                const eventEndDate = eventWithDate.endDate || eventWithDate.date;
+                const hasEnded = new Date(eventEndDate) < new Date();
+                setIsEventEnded(hasEnded);
+
                 // Vérifier si organisateur
-                const isOrganizer = user && (eventData.organizerId === user.id || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN');
+                const isOrganizerCheck = !!(user && (eventData.organizerId === user.id || user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'));
+                setIsOrganizer(isOrganizerCheck);
 
                 // Vérifier si inscrit (DB puis sessionStorage)
                 let userIsRegistered = false;
@@ -62,7 +71,7 @@ export default function EventParticipantsPage() {
                     userIsRegistered = registeredIds.includes(eventId);
                 }
 
-                const canAccess = isOrganizer || userIsRegistered;
+                const canAccess = isOrganizerCheck || userIsRegistered;
                 setHasAccess(canAccess);
 
                 // Si accès autorisé, récupérer la liste des participants
@@ -138,13 +147,25 @@ export default function EventParticipantsPage() {
                         <ArrowLeft className="h-4 w-4" />
                         Retour à l'événement
                     </Link>
-                    <div>
+                    <div className="flex-1">
                         <h1 className="text-3xl font-bold text-gray-900">{event.title}</h1>
                         <p className="text-gray-600 mt-2">
                             {registrations.length} participant{registrations.length > 1 ? 's' : ''} inscrit
                             {registrations.length > 1 ? 's' : ''}
                         </p>
                     </div>
+                    {isOrganizer && registrations.length > 0 && (
+                        <button
+                            onClick={() => {
+                                const token = localStorage.getItem('token');
+                                window.open(`/api/events/${eventId}/labels?token=${token}`, '_blank');
+                            }}
+                            className="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-600 hover:to-pink-700 transition-all flex items-center gap-2 shadow-md"
+                        >
+                            <FileDown className="h-5 w-5" />
+                            Télécharger les étiquettes PDF
+                        </button>
+                    )}
                 </div>
 
                 {registrations.length === 0 ? (
@@ -245,7 +266,7 @@ export default function EventParticipantsPage() {
                                             </div>
                                         )}
 
-                                        {(registration.formData as any).email && (
+                                        {isEventEnded && (registration.formData as any).email && (
                                             <div className="flex items-start gap-3">
                                                 <Mail className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
                                                 <div>
@@ -260,7 +281,7 @@ export default function EventParticipantsPage() {
                                             </div>
                                         )}
 
-                                        {registration.formData.phone && (
+                                        {isEventEnded && registration.formData.phone && (
                                             <div className="flex items-start gap-3">
                                                 <Phone className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
                                                 <div>
@@ -275,7 +296,7 @@ export default function EventParticipantsPage() {
                                             </div>
                                         )}
 
-                                        {registration.formData.linkedin && (
+                                        {isEventEnded && registration.formData.linkedin && (
                                             <div className="flex items-start gap-3">
                                                 <Linkedin className="h-5 w-5 text-sky-500 mt-0.5 flex-shrink-0" />
                                                 <div>
