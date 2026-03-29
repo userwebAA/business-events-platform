@@ -160,9 +160,9 @@ export default function EventParticipantsPage() {
                                 const token = localStorage.getItem('token');
                                 window.open(`/api/events/${eventId}/labels?token=${token}`, '_blank');
                             }}
-                            className="bg-gradient-to-r from-purple-500 to-pink-600 text-white px-6 py-3 rounded-xl font-bold hover:from-purple-600 hover:to-pink-700 transition-all flex items-center gap-2 shadow-md"
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all flex items-center gap-2 shadow-sm text-sm"
                         >
-                            <FileDown className="h-5 w-5" />
+                            <FileDown className="h-4 w-4" />
                             Télécharger les étiquettes PDF
                         </button>
                     )}
